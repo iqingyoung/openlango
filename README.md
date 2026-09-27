@@ -104,4 +104,5 @@ TTS：Edge 免费音色（msedge 驱动，无需 key）；国内可换硅基流�
 - **M3 完善** ✅：输出层 **role-consistency judge**（漂移检测→下轮 system prompt 加固，异步审计不挡对话）+ **错误台账**（judge 纠错自动映射固定语法点→Basic 复习优先级提升、答对销账）+ 信号漂移触发**再校准标记**（dashboard 轻提示、placement 后清除，全程无评分打扰）
 - **M4 发布** ✅：Docker Compose（standalone）+ Anki apkg 导出 + 三套示例配置 + GitHub 撞名检查（openlango 可用，0 冲突）；S2S 经论证移出（可观测性/成本，国内候选 GLM-Realtime-Flash 0.18 元/分钟，留 M5 决策）
 
-License: Apache-2.0
+License: [Apache-2.0](https://github.com/iqingyoung/openlango?tab=Apache-2.0-1-ov-file)
+
