@@ -1,0 +1,66 @@
+# OpenLango 模型路由：每个能力位独立选型，改这里换模型，零代码改动。
+# driver 见 packages/providers/src/index.ts 注册表。
+
+llm:
+  driver: openai-compat          # openai-compat 覆盖 DeepSeek/Qwen/GLM/dots/OpenAI 等任意兼容端点
+  baseURL: ${OPENLANGO_LLM_BASE_URL}
+  apiKeyEnv: OPENLANGO_LLM_API_KEY
+  model: ${OPENLANGO_LLM_MODEL}
+  jsonMode: true                 # 厂商不支持 response_format=json_object 时改为 false
+  stripThink: true               # 模型把思考以内联 <think> 塞进正文时自动剥离
+  # 你的端点（dots3/qwen3 系）默认开思考：首 token 慢 + maxTokens 被思考吃光。
+  # 已实测 enable_thinking:false 生效；换其他厂商时对照注释二选一：
+  extraBody: { enable_thinking: false, chat_template_kwargs: { enable_thinking: false } }
+  # extraBody: { thinking: { type: "disabled" } }      # GLM / 豆包
+  # extraBody: { reasoning_effort: "low" }             # GPT-5 系
+
+# 按模块的生成参数（temperature 影响发挥，maxTokens 控制长度上限）。
+# coach 对话要自然但不等思考；judge/map 判分要确定；article 内容长但不需推理。
+generation:
+  coach:    { temperature: 0.7, maxTokens: 600 }
+  scenario: { temperature: 0.8, maxTokens: 400 }
+  judge:    { temperature: 0,   maxTokens: 400 }
+  article:  { temperature: 0.7, maxTokens: 2600 }
+  map:      { temperature: 0,   maxTokens: 300 }
+
+# 语音（M2）。ASR：OpenAI /audio/transcriptions 兼容端点，以下任选其一（改 baseURL/model/key 即可）：
+#   硅基流动·电信星辰(免费) https://api.siliconflow.cn/v1             model: TeleAI/SenseVoiceSmall
+#   Groq 免费档             https://api.groq.com/openai/v1           model: whisper-large-v3-turbo
+#   MiMo ASR 0.5/时 · hy3asr 0.45/时 · 智谱 glm-asr 0.72/时 · Qwen3-ASR 0.79/时(流式1.18) —— 见 README 价格表
+#   腾讯 MaaS 混元     https://tokenhub.tencentmaas.com/v1       model: hy-asr-3.0-preview
+#                     （路径非标，需加 path: wand/asrproxy/sync_transcribe）
+asr:
+  driver: openai-transcriptions
+  baseURL: https://api.siliconflow.cn/v1
+  apiKeyEnv: OPENLANGO_ASR_API_KEY
+  model: XingChenAGI/XingChenASR-V3.2   # 电信星辰 ASR（免费）；SenseVoiceSmall/Qwen3-ASR-1.7B 当前 transcriptions 端点 500
+
+# TTS：msedge = Edge 免费音色（无需 key，默认）；openai-speech = /audio/speech 兼容端点
+tts:
+  driver: msedge
+  voice: en-US-AriaNeural
+
+# 能力位可分开路由，丰俭由人：
+# judge/纠错用最便宜档 → 再加一个 llm 副位；对话用中档；文章生成可高档。
+# M2 启用语音后取消注释：
+# asr:
+#   driver: groq-whisper
+#   apiKeyEnv: OPENLANGO_ASR_API_KEY
+#   model: whisper-large-v3-turbo
+# tts:
+#   driver: edge
+# realtime:
+#   driver: openai-realtime
+#
+# 全本地零成本路径：
+# llm:
+#   driver: ollama
+#   baseURL: ${OPENLANGO_OLLAMA_BASE_URL}
+#   model: ${OPENLANGO_OLLAMA_MODEL}
+
+search:
+  driver: rss
+  engine: auto                   # auto=bing→google→hn→npr 自动回退；可固定 bing/google/hn/npr
+
+database:
+  file: data/openlango.db

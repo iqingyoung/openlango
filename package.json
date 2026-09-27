@@ -1,0 +1,15 @@
+{
+  "name": "openlango",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Open, modular language-learning harness. Models are replaceable. Learning state is persistent.",
+  "type": "module",
+  "scripts": {
+    "test": "pnpm -r test",
+    "db:push": "pnpm --filter @openlango/core db:push",
+    "web:dev": "pnpm --filter @openlango/web dev"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

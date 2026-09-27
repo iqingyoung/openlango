@@ -1,0 +1,306 @@
+/**
+ * 服务端单例：仓库根定位、.env 装载、配置→providers、DB、learner 与技能状态读写。
+ * 宪章：模型可换（配置驱动），学习状态持久（全部落库）。
+ */
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import Database from 'better-sqlite3';
+import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { and, asc, eq } from 'drizzle-orm';
+import { loadConfig } from '@openlango/providers/config';
+import { createProviders, type ProviderSet } from '@openlango/providers';
+import type { ASRProvider, LLMProvider, OpenLangoConfig, SearchProvider, Skill, TTSProvider } from '@openlango/core';
+import {
+  learners,
+  skillLevels,
+  newVectorState,
+  applySignal as applySignalCore,
+  displayBands,
+  type SkillVectorState,
+} from '@openlango/core';
+
+// ---------- 仓库根定位（next dev 的 cwd 是 apps/web） ----------
+
+function findRepoRoot(): string {
+  // 容器/打包环境目录结构变化，显式 env 优先
+  if (process.env.OPENLANGO_ROOT) return process.env.OPENLANGO_ROOT;
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 6; i++) {
+    if (existsSync(join(dir, 'config/openlango.config.yaml'))) return dir;
+    dir = dirname(dir);
+  }
+  return process.cwd();
+}
+
+export const REPO_ROOT = findRepoRoot();
+
+/** 设置页展示的真实路径（动态解析，不写死） */
+export const SETTINGS_PATHS = {
+  repoRoot: REPO_ROOT,
+  envFile: join(REPO_ROOT, '.env'),
+  configFile: join(REPO_ROOT, 'config', 'openlango.config.yaml'),
+};
+
+// ---------- .env（不覆盖已有环境变量） ----------
+
+function loadEnvFile(): void {
+  const p = join(REPO_ROOT, '.env');
+  if (!existsSync(p)) return;
+  for (const line of readFileSync(p, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && m[1] && m[2] && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  }
+}
+loadEnvFile();
+
+// ---------- 配置与 providers ----------
+
+let configCache: OpenLangoConfig | null = null;
+let providersCache: ProviderSet | null = null;
+
+export function getConfig(): OpenLangoConfig {
+  configCache ??= loadConfig(join(REPO_ROOT, 'config/openlango.config.yaml'));
+  return configCache;
+}
+
+export function getProviders() {
+  providersCache ??= createProviders(getConfig());
+  return providersCache;
+}
+
+export function getLlm(): LLMProvider | null {
+  return getProviders().llm ?? null;
+}
+
+export function getAsr(): ASRProvider | null {
+  return getProviders().asr ?? null;
+}
+
+export function getTts(): TTSProvider | null {
+  return getProviders().tts ?? null;
+}
+
+// ---------- DB ----------
+
+type DB = BetterSQLite3Database<Record<string, never>>;
+let dbCache: DB | null = null;
+
+export function getDb(): DB {
+  if (dbCache) return dbCache;
+  const file = getConfig().database?.file ?? 'data/openlango.db';
+  const dbPath = file.startsWith('/') ? file : join(REPO_ROOT, file);
+  mkdirSync(dirname(dbPath), { recursive: true });
+  const sqlite = new Database(dbPath);
+  sqlite.pragma('journal_mode = WAL');
+  dbCache = drizzle(sqlite);
+  return dbCache;
+}
+
+// ---------- 生成参数（按模块） ----------
+
+export interface GenerationParams {
+  temperature?: number;
+  maxTokens?: number;
+}
+
+type GenerationModule = 'coach' | 'scenario' | 'judge' | 'article' | 'map';
+
+export function getGenerationParams(module: GenerationModule): GenerationParams {
+  const gen = getConfig().generation as Record<string, GenerationParams> | undefined;
+  return gen?.[module] ?? {};
+}
+
+// ---------- Learner ----------
+
+export async function getLearner() {
+  const db = getDb();
+  const rows = await db.select().from(learners).orderBy(asc(learners.createdAt)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function ensureLearner() {
+  const existing = await getLearner();
+  if (existing) return existing;
+  const db = getDb();
+  const id = crypto.randomUUID();
+  await db.insert(learners).values({ id, name: 'local learner' });
+  for (const skill of ['reading', 'listening', 'speaking', 'vocabulary', 'grammar'] as const) {
+    await db
+      .insert(skillLevels)
+      .values({ learnerId: id, skill, theta: 50, ewma: 50, confidence: 0 })
+      .onConflictDoNothing();
+  }
+  return (await getLearner())!;
+}
+
+// ---------- 技能状态 ----------
+
+const SKILLS: Skill[] = ['reading', 'listening', 'speaking', 'vocabulary', 'grammar'];
+
+export async function loadSkillStates(learnerId: string): Promise<SkillVectorState> {
+  const db = getDb();
+  const rows = await db.select().from(skillLevels).where(eq(skillLevels.learnerId, learnerId));
+  const vector: Partial<Record<Skill, number>> = {};
+  for (const s of SKILLS) {
+    const row = rows.find((r) => r.skill === s);
+    vector[s] = row?.theta ?? 50;
+  }
+  const state = newVectorState(vector as Record<Skill, number>);
+  // 恢复 ewma/streak
+  for (const s of SKILLS) {
+    const row = rows.find((r) => r.skill === s);
+    if (row) {
+      state[s].ewma = row.ewma;
+      state[s].streakUp = row.streakUp;
+      state[s].streakDown = row.streakDown;
+    }
+  }
+  return state;
+}
+
+export async function saveSkillStates(learnerId: string, state: SkillVectorState): Promise<void> {
+  const db = getDb();
+  for (const s of SKILLS) {
+    await db
+      .update(skillLevels)
+      .set({
+        theta: state[s].theta,
+        ewma: state[s].ewma,
+        streakUp: state[s].streakUp,
+        streakDown: state[s].streakDown,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(skillLevels.learnerId, learnerId), eq(skillLevels.skill, s)));
+  }
+}
+
+export async function applySignal(learnerId: string, skill: Skill, p: number): Promise<void> {
+  const state = await loadSkillStates(learnerId);
+  state[skill] = applySignalCore(state[skill], p);
+  await saveSkillStates(learnerId, state);
+}
+
+/** 展示用 bands（UI 永不见 θ 数值） */
+export async function getBands(learnerId: string) {
+  const state = await loadSkillStates(learnerId);
+  return displayBands(state);
+}
+
+// ---------- M3：审计 pass（角色漂移）+ 错误台账 + 再校准触发 ----------
+
+import { desc } from 'drizzle-orm';
+import { errorLedger, turns as turnsTable } from '@openlango/core';
+
+export interface DriftReport {
+  drifted: boolean;
+  reasons: string[];
+}
+
+/** 读某会话最后一轮是否被审计为漂移（漂移 → 下轮 system prompt 加固） */
+export async function getLastTurnDrift(sessionId: string): Promise<DriftReport | null> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(turnsTable)
+    .where(eq(turnsTable.sessionId, sessionId))
+    .orderBy(desc(turnsTable.idx))
+    .limit(1);
+  const meta = rows[0]?.metaJson;
+  if (!meta) return null;
+  try {
+    const parsed = JSON.parse(meta) as { audit?: DriftReport };
+    if (parsed.audit && typeof parsed.audit.drifted === 'boolean') return parsed.audit;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/** 纠错沉淀进错误台账（judge.grammarIds 与 corrections 按位对齐，越界丢弃） */
+export async function insertLedgerRows(
+  learnerId: string,
+  sessionId: string,
+  judge: { corrections: Array<{ wrong: string; fix: string; note?: string }>; grammarIds?: string[] },
+): Promise<void> {
+  const db = getDb();
+  const rows = judge.corrections.map((c, i) => ({
+    id: crypto.randomUUID(),
+    learnerId,
+    sessionId,
+    wrong: c.wrong,
+    fix: c.fix,
+    note: c.note ?? null,
+    grammarId: judge.grammarIds?.[i] ?? null,
+  }));
+  if (rows.length > 0) await db.insert(errorLedger).values(rows);
+}
+
+/** 未销账错误按语法点聚合（驱动 Basic 复习优先级） */
+export async function unresolvedErrorCounts(learnerId: string): Promise<Map<string, number>> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(errorLedger)
+    .where(and(eq(errorLedger.learnerId, learnerId), eq(errorLedger.resolved, false)));
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.grammarId) continue;
+    counts.set(r.grammarId, (counts.get(r.grammarId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** 答对销账 */
+export async function resolveLedgerForGrammar(learnerId: string, grammarId: string): Promise<void> {
+  const db = getDb();
+  await db
+    .update(errorLedger)
+    .set({ resolved: true })
+    .where(
+      and(eq(errorLedger.learnerId, learnerId), eq(errorLedger.grammarId, grammarId), eq(errorLedger.resolved, false)),
+    );
+}
+
+/** 信号漂移检测：近 7 天未销账错误 ≥8 → 置再校准标记（placement 完成后清除） */
+export async function checkRecalibration(learnerId: string): Promise<void> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(errorLedger)
+    .where(and(eq(errorLedger.learnerId, learnerId), eq(errorLedger.resolved, false)));
+  const recent = rows.filter((r) => Date.now() - (r.createdAt?.getTime() ?? 0) < 7 * 86400_000);
+  if (recent.length >= 8) {
+    await db.update(learners).set({ recalibrateAt: new Date() }).where(eq(learners.id, learnerId));
+  }
+}
+
+/** 审计 pass：角色一致性检查 + 回写轮次 meta（fire-and-forget 调用，不挡对话） */
+export async function auditTurn(opts: {
+  turnId: string;
+  reply: string;
+  scenario: { persona: string; goal: string };
+  llm: LLMProvider;
+}): Promise<void> {
+  try {
+    const { checkRoleConsistency } = await import('@openlango/core');
+    const report = await checkRoleConsistency({ reply: opts.reply, scenario: opts.scenario as never, llm: opts.llm });
+    if (!report) return;
+    const db = getDb();
+    const rows = await db.select().from(turnsTable).where(eq(turnsTable.id, opts.turnId));
+    const row = rows[0];
+    if (!row) return;
+    let meta: Record<string, unknown> = {};
+    if (row.metaJson) {
+      try {
+        meta = JSON.parse(row.metaJson) as Record<string, unknown>;
+      } catch {
+        meta = {};
+      }
+    }
+    meta.audit = report;
+    await db.update(turnsTable).set({ metaJson: JSON.stringify(meta) }).where(eq(turnsTable.id, opts.turnId));
+  } catch {
+    // 审计失败静默
+  }
+}

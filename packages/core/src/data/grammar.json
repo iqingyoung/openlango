@@ -1,0 +1,1226 @@
+[
+ {
+  "id": "g001",
+  "name": "be: present simple",
+  "zh": "be 动词一般现在时",
+  "cefr": "A1",
+  "formula": "S + am/is/are (+ complement)",
+  "examples": [
+   "She is a doctor.",
+   "They are at home."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g002",
+  "name": "there is / there are",
+  "zh": "存在句",
+  "cefr": "A1",
+  "formula": "There is + sing. / There are + pl. (+ place)",
+  "examples": [
+   "There is a book on the desk.",
+   "There are two apples."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g003",
+  "name": "have / has",
+  "zh": "have 表拥有",
+  "cefr": "A1",
+  "formula": "S + have/has + noun",
+  "examples": [
+   "She has two brothers.",
+   "I have a question."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g004",
+  "name": "present simple",
+  "zh": "一般现在时",
+  "cefr": "A1",
+  "formula": "S + V(s) / do-does + V",
+  "examples": [
+   "I work in a bank.",
+   "Do you like tea?"
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g005",
+  "name": "present continuous",
+  "zh": "现在进行时",
+  "cefr": "A1",
+  "formula": "S + am/is/are + V-ing",
+  "examples": [
+   "She is reading now.",
+   "They are playing football."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g006",
+  "name": "articles: a/an/the (basic)",
+  "zh": "冠词基础",
+  "cefr": "A1",
+  "formula": "a + consonant; an + vowel; the = specific",
+  "examples": [
+   "I have a cat and an apple.",
+   "The sun is bright."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g007",
+  "name": "plural nouns",
+  "zh": "名词复数",
+  "cefr": "A1",
+  "formula": "+s / +es / irregular (child→children)",
+  "examples": [
+   "I bought two books.",
+   "Three children are playing."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g008",
+  "name": "countable & uncountable",
+  "zh": "可数/不可数名词",
+  "cefr": "A1",
+  "formula": "a/an + countable; some + uncountable",
+  "examples": [
+   "I ate an egg.",
+   "We need some water."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g009",
+  "name": "personal pronouns",
+  "zh": "人称代词主格",
+  "cefr": "A1",
+  "formula": "I/you/he/she/it/we/they",
+  "examples": [
+   "He is my friend.",
+   "We are late."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g010",
+  "name": "object pronouns",
+  "zh": "人称代词宾格",
+  "cefr": "A1",
+  "formula": "me/you/him/her/it/us/them",
+  "examples": [
+   "Call me tonight.",
+   "Give it to her."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g011",
+  "name": "possessive adjectives",
+  "zh": "形容词性物主代词",
+  "cefr": "A1",
+  "formula": "my/your/his/her/its/our/their + noun",
+  "examples": [
+   "This is my car.",
+   "Her sister is kind."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g012",
+  "name": "possessive pronouns & 's",
+  "zh": "名词性物主代词与所有格",
+  "cefr": "A1",
+  "formula": "mine/yours/...; Noun+'s",
+  "examples": [
+   "That bag is mine.",
+   "It's Tom's bike."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g013",
+  "name": "demonstratives",
+  "zh": "指示代词",
+  "cefr": "A1",
+  "formula": "this/these (near); that/those (far)",
+  "examples": [
+   "This is my seat.",
+   "Those are clouds."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g014",
+  "name": "wh- questions (basic)",
+  "zh": "特殊疑问句基础",
+  "cefr": "A1",
+  "formula": "Wh-word + aux + S + V",
+  "examples": [
+   "Where do you live?",
+   "What is this?"
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g015",
+  "name": "yes/no questions & short answers",
+  "zh": "一般疑问句与简短回答",
+  "cefr": "A1",
+  "formula": "Aux + S + V? — Yes, S aux. / No, S aux-n't",
+  "examples": [
+   "Do you smoke? — No, I don't.",
+   "Is she here? — Yes, she is."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g016",
+  "name": "prepositions of time & place",
+  "zh": "时间地点介词 in/on/at",
+  "cefr": "A1",
+  "formula": "in + month/year; on + day; at + time/point",
+  "examples": [
+   "School starts in September.",
+   "See you on Monday at nine."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g017",
+  "name": "prepositions of place & movement",
+  "zh": "方位介词",
+  "cefr": "A1",
+  "formula": "next to / between / under / behind / in front of",
+  "examples": [
+   "The cat is under the table.",
+   "The bank is next to the café."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g018",
+  "name": "adverbs of frequency",
+  "zh": "频度副词",
+  "cefr": "A1",
+  "formula": "always/usually/often/sometimes/never (+ before main V)",
+  "examples": [
+   "I always get up at seven.",
+   "She never drinks coffee."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g019",
+  "name": "can / can't",
+  "zh": "can 表能力与许可",
+  "cefr": "A1",
+  "formula": "S + can('t) + V",
+  "examples": [
+   "I can swim.",
+   "You can't park here."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g020",
+  "name": "imperative",
+  "zh": "祈使句",
+  "cefr": "A1",
+  "formula": "(+) V... / (-) Don't + V",
+  "examples": [
+   "Open the door, please.",
+   "Don't be late."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g021",
+  "name": "like / love / hate + noun/-ing",
+  "zh": "好恶表达",
+  "cefr": "A1",
+  "formula": "S + like/love/hate + noun or V-ing",
+  "examples": [
+   "I like coffee.",
+   "She loves dancing."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g022",
+  "name": "would like + noun / to-V",
+  "zh": "would like 表意愿",
+  "cefr": "A1",
+  "formula": "S + would like + noun / to + V",
+  "examples": [
+   "I'd like a coffee, please.",
+   "I'd like to sit here."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g023",
+  "name": "basic conjunctions",
+  "zh": "基础连词 and/but/or/because/so",
+  "cefr": "A1",
+  "formula": "clause + and/but/or/because/so + clause",
+  "examples": [
+   "It's late, so I'm going home.",
+   "I stayed home because I was tired."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g024",
+  "name": "past simple: regular",
+  "zh": "一般过去时（规则）",
+  "cefr": "A1",
+  "formula": "S + V-ed (+ ago/last/yesterday)",
+  "examples": [
+   "I watched TV last night.",
+   "They arrived an hour ago."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g025",
+  "name": "past simple: common irregulars",
+  "zh": "一般过去时（常用不规则）",
+  "cefr": "A1",
+  "formula": "go→went, have→had, get→got ...",
+  "examples": [
+   "We went to Paris in May.",
+   "I had a cold last week."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g026",
+  "name": "comparatives (basic)",
+  "zh": "比较级基础",
+  "cefr": "A1",
+  "formula": "adj-er / more + adj (+ than)",
+  "examples": [
+   "This book is cheaper than that one.",
+   "She is more careful than me."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g027",
+  "name": "superlatives (basic)",
+  "zh": "最高级基础",
+  "cefr": "A1",
+  "formula": "the adj-est / the most + adj",
+  "examples": [
+   "It's the tallest building here.",
+   "This is the most useful app."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g028",
+  "name": "some / any",
+  "zh": "some/any",
+  "cefr": "A1",
+  "formula": "some (+); any (?/-)",
+  "examples": [
+   "There is some milk in the fridge.",
+   "Is there any bread?"
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g029",
+  "name": "present continuous for future",
+  "zh": "现在进行时表将来安排",
+  "cefr": "A2",
+  "formula": "S + am/is/are + V-ing (+ future time)",
+  "examples": [
+   "I'm meeting Tom at six.",
+   "We're flying to Rome on Friday."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g030",
+  "name": "be going to",
+  "zh": "be going to 将来",
+  "cefr": "A2",
+  "formula": "S + am/is/are going to + V",
+  "examples": [
+   "It's going to rain.",
+   "We're going to move next year."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g031",
+  "name": "will: predictions & decisions",
+  "zh": "will 表预测与即时决定",
+  "cefr": "A2",
+  "formula": "S + will ('ll) + V",
+  "examples": [
+   "I think she'll win.",
+   "I'll help you with that."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g032",
+  "name": "past continuous",
+  "zh": "过去进行时",
+  "cefr": "A2",
+  "formula": "S + was/were + V-ing",
+  "examples": [
+   "I was sleeping at midnight.",
+   "They were waiting outside."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g033",
+  "name": "past simple vs past continuous",
+  "zh": "一般过去时与过去进行时",
+  "cefr": "A2",
+  "formula": "was/were + V-ing + when + past simple",
+  "examples": [
+   "I was reading when he called.",
+   "While we were eating, it started to rain."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g034",
+  "name": "present perfect: experience",
+  "zh": "现在完成时表经历",
+  "cefr": "A2",
+  "formula": "S + have/has + V3 (+ ever/never/just/already/yet)",
+  "examples": [
+   "Have you ever been to Rome?",
+   "I've just finished lunch."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g035",
+  "name": "present perfect vs past simple",
+  "zh": "现在完成时与一般过去时",
+  "cefr": "A2",
+  "formula": "have + V3 (no fixed time) vs V-ed (fixed time)",
+  "examples": [
+   "I've lost my keys.",
+   "I lost them yesterday."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g036",
+  "name": "present perfect with for/since",
+  "zh": "现在完成时 + for/since",
+  "cefr": "A2",
+  "formula": "S + have/has + V3 + for/since ...",
+  "examples": [
+   "We've lived here for ten years.",
+   "I've known her since 2019."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g037",
+  "name": "must / mustn't",
+  "zh": "must 强义务与禁止",
+  "cefr": "A2",
+  "formula": "S + must('n't) + V",
+  "examples": [
+   "You must wear a helmet.",
+   "You mustn't smoke here."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g038",
+  "name": "have to / don't have to",
+  "zh": "have to 义务",
+  "cefr": "A2",
+  "formula": "S + have/has to + V",
+  "examples": [
+   "I have to work on Saturday.",
+   "She doesn't have to come."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g039",
+  "name": "should / shouldn't",
+  "zh": "should 建议",
+  "cefr": "A2",
+  "formula": "S + should('n't) + V",
+  "examples": [
+   "You should see a doctor.",
+   "You shouldn't eat so late."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g040",
+  "name": "could: past ability & requests",
+  "zh": "could 过去能力与礼貌请求",
+  "cefr": "A2",
+  "formula": "S + could + V; Could you + V?",
+  "examples": [
+   "I could run fast as a kid.",
+   "Could you help me, please?"
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g041",
+  "name": "may / might: possibility",
+  "zh": "may/might 可能性",
+  "cefr": "A2",
+  "formula": "S + may/might (not) + V",
+  "examples": [
+   "It might snow tonight.",
+   "She may be at the office."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g042",
+  "name": "comparatives: irregular & more/less",
+  "zh": "比较级进阶",
+  "cefr": "A2",
+  "formula": "more/less + adj; better/worse/farther",
+  "examples": [
+   "This is less expensive.",
+   "She runs faster than me."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g043",
+  "name": "superlatives: irregular",
+  "zh": "最高级进阶",
+  "cefr": "A2",
+  "formula": "the best / the worst / the farthest",
+  "examples": [
+   "That was the best day ever.",
+   "He is the worst singer I know."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g044",
+  "name": "as ... as",
+  "zh": "同级比较",
+  "cefr": "A2",
+  "formula": "as + adj/adv + as",
+  "examples": [
+   "He's as tall as his brother.",
+   "It's not as cold as yesterday."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g045",
+  "name": "too / (not) enough",
+  "zh": "too 与 enough",
+  "cefr": "A2",
+  "formula": "too + adj; adj + enough; enough + noun",
+  "examples": [
+   "It's too hot to run.",
+   "It isn't warm enough."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g046",
+  "name": "relative clauses: who/which/that",
+  "zh": "关系从句基础",
+  "cefr": "A2",
+  "formula": "N + who/which/that + clause",
+  "examples": [
+   "The man who called is my boss.",
+   "This is the phone which I bought."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g047",
+  "name": "adverbs of manner",
+  "zh": "方式副词",
+  "cefr": "A2",
+  "formula": "adj + -ly (+ after object)",
+  "examples": [
+   "She sings beautifully.",
+   "He drives carefully."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g048",
+  "name": "gerund as subject & object",
+  "zh": "动名词作主语宾语",
+  "cefr": "A2",
+  "formula": "V-ing + V(s) / S + V + V-ing",
+  "examples": [
+   "Smoking is bad for you.",
+   "I enjoy reading."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g049",
+  "name": "infinitive of purpose",
+  "zh": "不定式表目的",
+  "cefr": "A2",
+  "formula": "V + to + V",
+  "examples": [
+   "I went out to buy milk.",
+   "She called to say hello."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g050",
+  "name": "zero conditional",
+  "zh": "零条件句",
+  "cefr": "A2",
+  "formula": "If + present, present",
+  "examples": [
+   "If you heat ice, it melts.",
+   "If I drink coffee, I stay awake."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g051",
+  "name": "first conditional",
+  "zh": "第一条件句",
+  "cefr": "A2",
+  "formula": "If + present, will + V",
+  "examples": [
+   "If it rains, we'll stay home.",
+   "I'll call you if I'm late."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g052",
+  "name": "question tags",
+  "zh": "附加疑问句",
+  "cefr": "A2",
+  "formula": "clause, + aux + pronoun?",
+  "examples": [
+   "You're coming, aren't you?",
+   "She isn't here, is she?"
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g053",
+  "name": "both / either / neither",
+  "zh": "both/either/neither",
+  "cefr": "A2",
+  "formula": "both (+pl. V); either/neither (+sing. V)",
+  "examples": [
+   "Both answers are right.",
+   "Neither of us knows the answer."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g054",
+  "name": "compound pronouns",
+  "zh": "复合代词 something/anybody",
+  "cefr": "A2",
+  "formula": "some-/any-/no-/every- + -thing/-body/-where",
+  "examples": [
+   "Somebody is at the door.",
+   "Is there anything to eat?"
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g055",
+  "name": "reflexive pronouns",
+  "zh": "反身代词",
+  "cefr": "A2",
+  "formula": "myself/yourself/himself/...; by + refl.",
+  "examples": [
+   "I made this cake myself.",
+   "She traveled by herself."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g056",
+  "name": "adjective + preposition",
+  "zh": "形容词固定介词搭配",
+  "cefr": "A2",
+  "formula": "adj + at/of/about/with/for",
+  "examples": [
+   "She's good at math.",
+   "I'm afraid of spiders."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g057",
+  "name": "present perfect continuous",
+  "zh": "现在完成进行时",
+  "cefr": "B1",
+  "formula": "S + have/has been + V-ing (+ for/since)",
+  "examples": [
+   "I've been waiting for an hour.",
+   "She has been studying all week."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g058",
+  "name": "past perfect",
+  "zh": "过去完成时",
+  "cefr": "B1",
+  "formula": "S + had + V3 (+ before/when/by the time)",
+  "examples": [
+   "The train had left when we arrived.",
+   "I had never seen snow before that trip."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g059",
+  "name": "second conditional",
+  "zh": "第二条件句",
+  "cefr": "B1",
+  "formula": "If + past simple, would + V",
+  "examples": [
+   "If I had time, I would travel more.",
+   "If I were you, I'd take the job."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g060",
+  "name": "used to / would (past habits)",
+  "zh": "过去习惯 used to/would",
+  "cefr": "B1",
+  "formula": "S + used to + V; would + V",
+  "examples": [
+   "I used to play chess every day.",
+   "We would visit them every summer."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g061",
+  "name": "modals of deduction",
+  "zh": "情态动词推测",
+  "cefr": "B1",
+  "formula": "must (sure) / might, could (possible) / can't (impossible) + V",
+  "examples": [
+   "He must be tired after the flight.",
+   "That can't be true."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g062",
+  "name": "passive: present & past simple",
+  "zh": "被动语态基础",
+  "cefr": "B1",
+  "formula": "S + am/is/are/was/were + V3 (+ by ...)",
+  "examples": [
+   "English is spoken here.",
+   "The car was stolen last night."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g063",
+  "name": "reported speech: statements",
+  "zh": "间接引语（陈述）",
+  "cefr": "B1",
+  "formula": "said/told (that) + backshift",
+  "examples": [
+   "He said (that) he was tired.",
+   "She told me (that) she had finished."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g064",
+  "name": "reported questions & commands",
+  "zh": "间接疑问与命令",
+  "cefr": "B1",
+  "formula": "asked + wh/if + clause; told + O + to V",
+  "examples": [
+   "She asked where I lived.",
+   "He told me to wait outside."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g065",
+  "name": "relative clauses: where/whose/when",
+  "zh": "关系副词与 whose",
+  "cefr": "B1",
+  "formula": "N + where/when + clause; N + whose + N",
+  "examples": [
+   "This is the hotel where we stayed.",
+   "That's the author whose book won the prize."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g066",
+  "name": "defining vs non-defining relatives",
+  "zh": "限定与非限定从句",
+  "cefr": "B1",
+  "formula": ", + who/which + clause (extra info)",
+  "examples": [
+   "My brother, who lives in Rome, is a chef.",
+   "The car, which I bought last year, broke down."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g067",
+  "name": "verb patterns: gerund vs infinitive",
+  "zh": "动词搭配：动名词与不定式",
+  "cefr": "B1",
+  "formula": "enjoy/avoid/finish + -ing; decide/hope/plan + to-V; remember/stop + both",
+  "examples": [
+   "I decided to leave early.",
+   "I remember locking the door."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g068",
+  "name": "make / let / help + object + verb",
+  "zh": "使役 make/let/help",
+  "cefr": "B1",
+  "formula": "make/let + O + V; help + O + (to) V",
+  "examples": [
+   "She made me laugh.",
+   "Let me explain."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g069",
+  "name": "causative: have/get something done",
+  "zh": "使役被动 have/get sth done",
+  "cefr": "B1",
+  "formula": "S + have/get + O + V3",
+  "examples": [
+   "I had my hair cut yesterday.",
+   "We're getting the kitchen painted."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g070",
+  "name": "first vs second conditional contrast",
+  "zh": "第一/第二条件句对比",
+  "cefr": "B1",
+  "formula": "If + present → will (real) / If + past → would (unreal)",
+  "examples": [
+   "If I win, I'll celebrate.",
+   "If I won, I'd buy a house."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g071",
+  "name": "wish / if only + past",
+  "zh": "wish 表遗憾",
+  "cefr": "B1",
+  "formula": "S + wish + S + past simple",
+  "examples": [
+   "I wish I knew the answer.",
+   "If only we had more time."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g072",
+  "name": "although / however / despite",
+  "zh": "让步连接词",
+  "cefr": "B1",
+  "formula": "although + clause; despite + noun/-ing; however, ...",
+  "examples": [
+   "Although it rained, we kept walking.",
+   "Despite the delay, we arrived on time."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g073",
+  "name": "quantifiers: few/a few/little/a little",
+  "zh": "量词 few/little",
+  "cefr": "B1",
+  "formula": "a few + pl. (positive); few (negative); a little + uncount.",
+  "examples": [
+   "I have a few friends here.",
+   "There's little time left."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g074",
+  "name": "articles: the & zero article",
+  "zh": "定冠词与零冠词",
+  "cefr": "B1",
+  "formula": "the + unique; zero + general/home/bed",
+  "examples": [
+   "The moon is bright tonight.",
+   "She's at home in bed."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g075",
+  "name": "extended phrasal verbs",
+  "zh": "短语动词进阶",
+  "cefr": "B1",
+  "formula": "V + particle(s); three-word verbs",
+  "examples": [
+   "I'm looking forward to the trip.",
+   "I can't put up with the noise."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g076",
+  "name": "verb + preposition + gerund",
+  "zh": "动词+介词+动名词",
+  "cefr": "B1",
+  "formula": "V + prep + V-ing",
+  "examples": [
+   "I'm interested in learning Spanish.",
+   "He insisted on paying."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g077",
+  "name": "-ed / -ing adjectives",
+  "zh": "ed/ing 形容词",
+  "cefr": "B1",
+  "formula": "-ing = causing feeling; -ed = feeling",
+  "examples": [
+   "The film was boring.",
+   "I was bored."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g078",
+  "name": "so / such",
+  "zh": "so/such 强调",
+  "cefr": "B1",
+  "formula": "so + adj; such + (a) + adj + noun",
+  "examples": [
+   "It was so cold that we stayed in.",
+   "It was such a good film."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g079",
+  "name": "future continuous",
+  "zh": "将来进行时",
+  "cefr": "B1",
+  "formula": "S + will be + V-ing (+ this time tomorrow)",
+  "examples": [
+   "This time tomorrow I'll be flying to Rome.",
+   "We'll be waiting at the entrance."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g080",
+  "name": "past modal: should have + V3",
+  "zh": "should have 表本应",
+  "cefr": "B1",
+  "formula": "S + should(n't) have + V3",
+  "examples": [
+   "You should have called me.",
+   "I shouldn't have said that."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g081",
+  "name": "third conditional",
+  "zh": "第三条件句",
+  "cefr": "B2",
+  "formula": "If + had + V3, would have + V3",
+  "examples": [
+   "If I had studied, I would have passed.",
+   "She would have come if you had invited her."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g082",
+  "name": "mixed conditionals",
+  "zh": "混合条件句",
+  "cefr": "B2",
+  "formula": "If + had + V3, would + V (now) / etc.",
+  "examples": [
+   "If I had saved money, I would be rich now.",
+   "If I were braver, I would have spoken up."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g083",
+  "name": "past perfect continuous",
+  "zh": "过去完成进行时",
+  "cefr": "B2",
+  "formula": "S + had been + V-ing (+ before/when)",
+  "examples": [
+   "She had been working there for years before she quit.",
+   "They had been arguing all evening."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g084",
+  "name": "passive: all tenses & modals",
+  "zh": "被动语态全时态",
+  "cefr": "B2",
+  "formula": "be (any tense) + V3; modal + be + V3",
+  "examples": [
+   "The house is being painted.",
+   "It must be finished today."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g085",
+  "name": "reporting verbs + patterns",
+  "zh": "转述动词搭配",
+  "cefr": "B2",
+  "formula": "suggest/advise/deny/admit + -ing; accuse O of -ing",
+  "examples": [
+   "She suggested going early.",
+   "He denied taking the money."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g086",
+  "name": "wish / if only + would",
+  "zh": "wish + would 表抱怨",
+  "cefr": "B2",
+  "formula": "wish + S + would(n't) + V",
+  "examples": [
+   "I wish you would stop smoking.",
+   "If only it would stop raining."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g087",
+  "name": "reduced relative clauses",
+  "zh": "关系从句省略",
+  "cefr": "B2",
+  "formula": "N + V-ing / V3 phrase (omit who/which + be)",
+  "examples": [
+   "The man sitting there is my uncle.",
+   "The letters sent yesterday arrived today."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g088",
+  "name": "modal perfects",
+  "zh": "情态动词完成式",
+  "cefr": "B2",
+  "formula": "must/might/could/can't/should + have + V3",
+  "examples": [
+   "She must have left already.",
+   "He can't have finished so fast."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g089",
+  "name": "future perfect (continuous)",
+  "zh": "将来完成时（进行）",
+  "cefr": "B2",
+  "formula": "will have + V3 / will have been + V-ing (+ by)",
+  "examples": [
+   "By 2030 I'll have finished my degree.",
+   "In June she'll have been living here for ten years."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g090",
+  "name": "causatives: get/have (advanced)",
+  "zh": "使役结构进阶",
+  "cefr": "B2",
+  "formula": "get + O + to V / have + O + V",
+  "examples": [
+   "I got my brother to help me.",
+   "She had the waiter bring the bill."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g091",
+  "name": "cleft sentences",
+  "zh": "强调句 It/What",
+  "cefr": "B2",
+  "formula": "It was X who/that ...; What I need is ...",
+  "examples": [
+   "It was Tom who called you.",
+   "What I need is more time."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g092",
+  "name": "participle clauses",
+  "zh": "分词从句",
+  "cefr": "B2",
+  "formula": "V-ing / V3 / having + V3 (+ main clause)",
+  "examples": [
+   "Having finished dinner, we left.",
+   "Written in 1920, the novel still feels modern."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g093",
+  "name": "verb + wh-clause / that-clause",
+  "zh": "动词 + 宾语从句",
+  "cefr": "B2",
+  "formula": "wonder/know/believe + wh-/that-clause",
+  "examples": [
+   "I wonder what happened.",
+   "She believes that it's true."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g094",
+  "name": "the more...the more / twice as...as",
+  "zh": "比例比较结构",
+  "cefr": "B2",
+  "formula": "The more + clause, the more + clause; twice as + adj + as",
+  "examples": [
+   "The more you read, the more you know.",
+   "This one costs twice as much as that."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g095",
+  "name": "unless / provided / as long as",
+  "zh": "条件连词 unless 等",
+  "cefr": "B2",
+  "formula": "unless + clause; provided/as long as + clause",
+  "examples": [
+   "You'll pass unless you panic.",
+   "You can stay as long as you keep quiet."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g096",
+  "name": "be used to / get used to",
+  "zh": "be/get used to 习惯",
+  "cefr": "B2",
+  "formula": "be/get used to + V-ing (≠ used to + V)",
+  "examples": [
+   "I'm used to getting up early.",
+   "She's slowly getting used to the weather."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g097",
+  "name": "relative 'what'",
+  "zh": "what 引导名词性从句",
+  "cefr": "B2",
+  "formula": "what + clause (= the thing that)",
+  "examples": [
+   "Show me what you made.",
+   "That's what I meant."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g098",
+  "name": "advanced discourse markers",
+  "zh": "高级语篇标记",
+  "cefr": "B2",
+  "formula": "whereas / nevertheless / therefore / moreover",
+  "examples": [
+   "It's cheap; however, it's slow.",
+   "He studied hard; therefore, he passed."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g099",
+  "name": "hedging & stance adverbs",
+  "zh": "模糊限制语",
+  "cefr": "B2",
+  "formula": "apparently/presumably/arguably/roughly (+ clause)",
+  "examples": [
+   "Presumably, they agreed to the deal.",
+   "It's arguably the best cafe in town."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g100",
+  "name": "advanced articles & zero article",
+  "zh": "冠词高级用法",
+  "cefr": "B2",
+  "formula": "the + adj (group); zero + institution",
+  "examples": [
+   "The rich are getting richer.",
+   "He's in hospital with a broken leg."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g101",
+  "name": "advanced phrasal verbs",
+  "zh": "高级短语动词",
+  "cefr": "B2",
+  "formula": "V + particle (+ separable with pronoun)",
+  "examples": [
+   "We've run out of time.",
+   "Let's put it off until Monday."
+  ],
+  "source": "cefr-consensus"
+ },
+ {
+  "id": "g102",
+  "name": "noun post-modification",
+  "zh": "名词后置修饰",
+  "cefr": "B2",
+  "formula": "N + to-V / -ing / that-clause",
+  "examples": [
+   "It was a hard decision to make.",
+   "The fact that he lied upset everyone."
+  ],
+  "source": "cefr-consensus"
+ }
+]

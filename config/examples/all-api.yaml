@@ -1,0 +1,34 @@
+# 全 API 档：ASR/LLM 云端，TTS 免费（Edge）。约几分钱/小时，开箱最顺。
+# 用法：复制本文件为 ../openlango.config.yaml，key 填 .env，重启 dev。
+
+llm:
+  driver: openai-compat
+  baseURL: ${OPENLANGO_LLM_BASE_URL}      # 例：https://api.siliconflow.cn/v1 或你的 dots 端点
+  apiKeyEnv: OPENLANGO_LLM_API_KEY
+  model: ${OPENLANGO_LLM_MODEL}
+  jsonMode: true
+  stripThink: true
+
+generation:
+  coach:    { temperature: 0.7, maxTokens: 600 }
+  scenario: { temperature: 0.8, maxTokens: 400 }
+  judge:    { temperature: 0,   maxTokens: 400 }
+  article:  { temperature: 0.7, maxTokens: 2600 }
+  map:      { temperature: 0,   maxTokens: 300 }
+
+asr:
+  driver: openai-transcriptions
+  baseURL: https://api.siliconflow.cn/v1
+  apiKeyEnv: OPENLANGO_ASR_API_KEY
+  model: XingChenAGI/XingChenASR-V3.2     # 电信星辰，免费
+
+tts:
+  driver: msedge                           # Edge 免费音色，无需 key
+  voice: en-US-AriaNeural
+
+search:
+  driver: rss
+  engine: auto
+
+database:
+  file: data/openlango.db

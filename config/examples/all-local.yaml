@@ -1,0 +1,37 @@
+# 全本地档：LLM 走 Ollama，ASR 走本地 whisper-asr-webservice（Docker 一行起）。
+# TTS 暂无高质量本地免装方案，默认仍用 Edge 免费音色（需联网）；纯离线可自建
+# CosyVoice/Piper 的 OpenAI 兼容 /audio/speech 服务后换 openai-speech 驱动。
+# 用法：复制本文件为 ../openlango.config.yaml。
+
+# 先起本地 ASR：
+#   docker run -d -p 9000:9000 onerahmet/openai-whisper-asr-webservice:latest \
+#     -e ASR_MODEL=base -e ASR_ENGINE=faster_whisper
+
+llm:
+  driver: ollama
+  baseURL: ${OPENLANGO_OLLAMA_BASE_URL}    # 默认 http://localhost:11434
+  model: qwen3:8b
+
+generation:
+  coach:    { temperature: 0.7, maxTokens: 600 }
+  scenario: { temperature: 0.8, maxTokens: 400 }
+  judge:    { temperature: 0,   maxTokens: 400 }
+  article:  { temperature: 0.7, maxTokens: 2600 }
+  map:      { temperature: 0,   maxTokens: 300 }
+
+asr:
+  driver: openai-transcriptions
+  baseURL: http://localhost:9000/v1
+  model: base                               # whisper-asr-webservice 忽略 model 具体值也可
+  language: en
+
+tts:
+  driver: msedge
+  voice: en-US-AriaNeural
+
+search:
+  driver: rss
+  engine: auto
+
+database:
+  file: data/openlango.db

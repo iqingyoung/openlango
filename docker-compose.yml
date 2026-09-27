@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - OPENLANGO_ROOT=/app
+    volumes:
+      - ./data:/app/data          # SQLite 学习数据（持久化）
+      - ./config:/app/config      # openlango.config.yaml 模型路由
+      - ./.env:/app/.env:ro       # API key（只读挂载）
+    restart: unless-stopped
