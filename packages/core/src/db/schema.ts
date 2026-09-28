@@ -2,8 +2,9 @@
  * SQLite schema（Drizzle）。M0 冻结表结构：学习者/五维等级/placement/会话/轮次/
  * 词汇状态(FSRS)/语法状态/文章/prompt 审计。
  * 宪章：模型可换，学习状态持久 —— 所有状态落库，不进模型。
+ * 完整性：learner 维度外键级联删除 + 业务唯一键（并发写重复在 DB 层被拒）。
  */
-import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const learners = sqliteTable('learners', {
   id: text('id').primaryKey(), // uuid
@@ -20,7 +21,9 @@ export const learners = sqliteTable('learners', {
 export const skillLevels = sqliteTable(
   'skill_levels',
   {
-    learnerId: text('learner_id').notNull(),
+    learnerId: text('learner_id')
+      .notNull()
+      .references(() => learners.id, { onDelete: 'cascade' }),
     skill: text('skill').notNull(), // reading|listening|speaking|vocabulary|grammar
     theta: real('theta').notNull().default(50),
     confidence: real('confidence').notNull().default(0),
@@ -34,7 +37,9 @@ export const skillLevels = sqliteTable(
 
 export const placementRuns = sqliteTable('placement_runs', {
   id: text('id').primaryKey(),
-  learnerId: text('learner_id').notNull(),
+  learnerId: text('learner_id')
+    .notNull()
+    .references(() => learners.id, { onDelete: 'cascade' }),
   mode: text('mode').notNull(), // placement | recalibration
   resultJson: text('result_json').notNull(), // 五维 θ + confidence + 证据
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
@@ -42,7 +47,9 @@ export const placementRuns = sqliteTable('placement_runs', {
 
 export const sessions = sqliteTable('sessions', {
   id: text('id').primaryKey(),
-  learnerId: text('learner_id').notNull(),
+  learnerId: text('learner_id')
+    .notNull()
+    .references(() => learners.id, { onDelete: 'cascade' }),
   module: text('module').notNull(), // coach|article|basic
   scenarioJson: text('scenario_json'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
@@ -53,7 +60,9 @@ export const turns = sqliteTable(
   'turns',
   {
     id: text('id').primaryKey(),
-    sessionId: text('session_id').notNull(),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
     idx: integer('idx').notNull(),
     userText: text('user_text'),
     assistantText: text('assistant_text'),
@@ -61,7 +70,7 @@ export const turns = sqliteTable(
     metaJson: text('meta_json'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   },
-  (t) => [index('turns_session_idx').on(t.sessionId, t.idx)],
+  (t) => [uniqueIndex('turns_session_idx').on(t.sessionId, t.idx)], // UNIQUE：并发写不产生重复轮次
 );
 
 /** learned_set + 掌握状态：运行时 LLM 只映射不发明，词条须能对回 data/vocab.json */
@@ -69,7 +78,9 @@ export const vocabStates = sqliteTable(
   'vocab_states',
   {
     id: text('id').primaryKey(),
-    learnerId: text('learner_id').notNull(),
+    learnerId: text('learner_id')
+      .notNull()
+      .references(() => learners.id, { onDelete: 'cascade' }),
     word: text('word').notNull(),
     cefr: text('cefr'),
     band: integer('band'),
@@ -84,7 +95,10 @@ export const vocabStates = sqliteTable(
     dueAt: integer('due_at', { mode: 'timestamp' }),
     firstSeenAt: integer('first_seen_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   },
-  (t) => [index('vocab_learner_due').on(t.learnerId, t.dueAt)],
+  (t) => [
+    index('vocab_learner_due').on(t.learnerId, t.dueAt),
+    uniqueIndex('vocab_learner_word').on(t.learnerId, t.word), // UNIQUE：同一词不重复入卡
+  ],
 );
 
 /** 语法点状态：grammarId 对回 data/grammar.json 的固定清单 */
@@ -92,7 +106,9 @@ export const grammarStates = sqliteTable(
   'grammar_states',
   {
     id: text('id').primaryKey(),
-    learnerId: text('learner_id').notNull(),
+    learnerId: text('learner_id')
+      .notNull()
+      .references(() => learners.id, { onDelete: 'cascade' }),
     grammarId: text('grammar_id').notNull(), // data/grammar.json id
     state: text('state').notNull().default('unknown'), // unknown|exposure|practice|test|mastered
     fsrsState: integer('fsrs_state').notNull().default(0),
@@ -102,12 +118,17 @@ export const grammarStates = sqliteTable(
     lapses: integer('lapses').notNull().default(0),
     dueAt: integer('due_at', { mode: 'timestamp' }),
   },
-  (t) => [index('grammar_learner_due').on(t.learnerId, t.dueAt)],
+  (t) => [
+    index('grammar_learner_due').on(t.learnerId, t.dueAt),
+    uniqueIndex('grammar_learner_grammar').on(t.learnerId, t.grammarId), // UNIQUE：同语法点不重复
+  ],
 );
 
 export const articles = sqliteTable('articles', {
   id: text('id').primaryKey(),
-  learnerId: text('learner_id').notNull(),
+  learnerId: text('learner_id')
+    .notNull()
+    .references(() => learners.id, { onDelete: 'cascade' }),
   topic: text('topic').notNull(),
   title: text('title').notNull(),
   cefr: text('cefr').notNull(),
@@ -135,7 +156,9 @@ export const errorLedger = sqliteTable(
   'error_ledger',
   {
     id: text('id').primaryKey(),
-    learnerId: text('learner_id').notNull(),
+    learnerId: text('learner_id')
+      .notNull()
+      .references(() => learners.id, { onDelete: 'cascade' }),
     sessionId: text('session_id'),
     wrong: text('wrong').notNull(),
     fix: text('fix').notNull(),
@@ -152,7 +175,9 @@ export const learningEvents = sqliteTable(
   'learning_events',
   {
     id: text('id').primaryKey(),
-    learnerId: text('learner_id').notNull(),
+    learnerId: text('learner_id')
+      .notNull()
+      .references(() => learners.id, { onDelete: 'cascade' }),
     skill: text('skill').notNull(), // reading|listening|speaking|vocabulary|grammar
     score: real('score').notNull(), // 0-100，θ 同尺度
     source: text('source').notNull(), // coach_judge|voice_judge|article_quiz|basic_drill|placement

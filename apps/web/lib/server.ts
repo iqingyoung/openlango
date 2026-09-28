@@ -90,17 +90,22 @@ export function getTts(): TTSProvider | null {
 // ---------- DB ----------
 
 type DB = BetterSQLite3Database<Record<string, never>>;
-let dbCache: DB | null = null;
+
+// Next dev HMR 会重新执行模块：连接句柄挂 globalThis 防止多连接导致锁与状态分裂
+const globalStore = globalThis as unknown as { __openlangoDb?: DB };
 
 export function getDb(): DB {
-  if (dbCache) return dbCache;
+  if (globalStore.__openlangoDb) return globalStore.__openlangoDb;
   const file = getConfig().database?.file ?? 'data/openlango.db';
   const dbPath = file.startsWith('/') ? file : join(REPO_ROOT, file);
   mkdirSync(dirname(dbPath), { recursive: true });
   const sqlite = new Database(dbPath);
   sqlite.pragma('journal_mode = WAL');
-  dbCache = drizzle(sqlite);
-  return dbCache;
+  sqlite.pragma('busy_timeout = 5000'); // 并发写锁重试，避免 SQLITE_BUSY
+  sqlite.pragma('synchronous = NORMAL'); // WAL 模式下的安全/吞吐平衡
+  sqlite.pragma('foreign_keys = ON'); // 级联删除与引用完整性
+  globalStore.__openlangoDb = drizzle(sqlite);
+  return globalStore.__openlangoDb;
 }
 
 // ---------- 生成参数（按模块） ----------
