@@ -9,7 +9,6 @@ import { bandOf } from '../level/level-manager.ts';
 import { type SkillVector } from '../level/cefr.ts';
 import { lookupWord, GRAMMAR } from '../data/index.ts';
 import { lemmatize } from '../article/pipeline.ts';
-import { parseJsonLoose } from '../util/json.ts';
 import { parseLLMOutput } from '../util/llm-schema.ts';
 import { z } from 'zod';
 
@@ -29,7 +28,13 @@ export interface Scenario {
 export interface TurnJudge {
   corrections: Array<{ wrong: string; fix: string; note?: string }>;
   usedTargetWords: string[];
-  complexity: number; // 0-100
+  /** 流利度/复杂度 0-100（词汇宽度、句子结构） */
+  complexity: number;
+  /** 证据子分数：LLM 提供则直采，缺省由代码派生（accuracy 由纠错数反推） */
+  accuracy?: number; // 语法准确度 0-100
+  lexicalRange?: number; // 词汇宽度 0-100
+  /** 目标词达成率 0-100（judgeTurn 依场景目标词计算） */
+  targetWordUsage?: number;
   /** 纠错对应的固定语法点（只映射合法 id，越界的在解析时被丢弃） */
   grammarIds?: string[];
 }
@@ -200,7 +205,7 @@ export async function judgeTurn(opts: {
           role: 'system',
           content: renderSystemPrompt({
             module: 'coach',
-            task: `Judge the learner's last English utterance silently (the learner never sees this). Report: corrections (grammar/word choice, max 3), which target words were used, a complexity score 0-100 for the utterance (vocabulary range, sentence structure), and grammarIds: map each correction to the fixed syllabus ids given in the task (never invent ids). Respond JSON only: {"corrections":[{"wrong":string,"fix":string,"note":string}],"usedTargetWords":string[],"complexity":number,"grammarIds":string[]}\nSyllabus ids: ${GRAMMAR.map((g) => g.id).join(',')}`,
+            task: `Judge the learner's last English utterance silently (the learner never sees this). Report: corrections (grammar/word choice, max 3), which target words were used, three 0-100 scores — complexity (vocabulary range & sentence structure of the utterance), accuracy (grammatical correctness), lexicalRange (breadth of vocabulary actually used) — and grammarIds: map each correction to the fixed syllabus ids given in the task (never invent ids). Respond JSON only: {"corrections":[{"wrong":string,"fix":string,"note":string}],"usedTargetWords":string[],"complexity":number,"accuracy":number,"lexicalRange":number,"grammarIds":string[]}\nSyllabus ids: ${GRAMMAR.map((g) => g.id).join(',')}`,
             learnerState: `speaking: ${bandOf(opts.vector.speaking)}`,
           }),
         },
@@ -212,37 +217,54 @@ export async function judgeTurn(opts: {
         },
       ],
     });
-    const parsed = parseJsonLoose(res.text) as Partial<TurnJudge & { grammarIds?: unknown }>;
-    const corrections = Array.isArray(parsed.corrections)
-      ? parsed.corrections
-          .filter((c) => c && typeof c.wrong === 'string' && typeof c.fix === 'string')
-          .slice(0, 3)
-      : [];
-    const usedTargetWords = Array.isArray(parsed.usedTargetWords)
-      ? parsed.usedTargetWords.filter((w): w is string => typeof w === 'string')
-      : [];
-    const complexity =
-      typeof parsed.complexity === 'number' ? Math.max(0, Math.min(100, parsed.complexity)) : NaN;
-    if (Number.isNaN(complexity) && corrections.length === 0) return null;
+    const parsed = parseLLMOutput(
+      z.object({
+        corrections: z
+          .array(z.object({ wrong: z.string(), fix: z.string(), note: z.string().optional() }))
+          .max(6)
+          .catch([]),
+        usedTargetWords: z.array(z.string()).max(20).catch([]),
+        complexity: z.number().min(0).max(100).optional(),
+        accuracy: z.number().min(0).max(100).optional(),
+        lexicalRange: z.number().min(0).max(100).optional(),
+        grammarIds: z.array(z.string()).max(10).catch([]),
+      }),
+      res.text,
+    );
+    if (!parsed) return null;
+    if (parsed.complexity === undefined && parsed.corrections.length === 0) return null;
     // grammarIds 只映射固定清单（只映射不发明红线）
-    const grammarIds = Array.isArray(parsed.grammarIds)
-      ? parsed.grammarIds.filter((id): id is string => typeof id === 'string' && GRAMMAR_IDS.has(id))
-      : [];
-    return { corrections, usedTargetWords, complexity: Number.isNaN(complexity) ? 50 : complexity, grammarIds };
+    const grammarIds = parsed.grammarIds.filter((id) => GRAMMAR_IDS.has(id));
+    // 目标词达成率（有目标词才有意义）
+    const total = opts.scenario.targetWords.length;
+    const targetWordUsage =
+      total > 0
+        ? Math.min(100, Math.round((100 * parsed.usedTargetWords.filter((w) => opts.scenario.targetWords.includes(w)).length) / total))
+        : undefined;
+    return {
+      corrections: parsed.corrections.slice(0, 3),
+      usedTargetWords: parsed.usedTargetWords,
+      complexity: parsed.complexity ?? 50,
+      accuracy: parsed.accuracy,
+      lexicalRange: parsed.lexicalRange,
+      targetWordUsage,
+      grammarIds,
+    };
   } catch {
     return null;
   }
 }
 
-/** judge 结果 → 等级信号（θ 同尺度 0-100） */
+/** judge 证据 → 等级信号（θ 同尺度 0-100）。
+ * speaking = 0.6*流利度 + 0.4*准确度；vocabulary = 0.5*词汇宽度 + 0.5*目标词达成率（无目标词时取词汇宽度）。
+ * 子分数缺省时由代码派生（accuracy ← 纠错数反推），旧格式 LLM 输出仍兼容。 */
 export function signalsFromJudge(judge: TurnJudge): { speaking?: number; vocabulary?: number } {
   const out: { speaking?: number; vocabulary?: number } = {};
-  // 复杂度为主信号，纠错数轻微下调
-  out.speaking = Math.max(0, judge.complexity - judge.corrections.length * 4);
-  if (judge.usedTargetWords.length > 0 || judge.corrections.length >= 0) {
-    // 词汇信号在 targetWords 为空时由复杂度弱代理
-    out.vocabulary = judge.complexity;
-  }
+  const accuracy = judge.accuracy ?? Math.max(0, 100 - judge.corrections.length * 15);
+  out.speaking = Math.round(0.6 * judge.complexity + 0.4 * accuracy);
+  const lexical = judge.lexicalRange ?? judge.complexity;
+  const usage = judge.targetWordUsage;
+  out.vocabulary = usage === undefined ? Math.round(lexical) : Math.round(0.5 * lexical + 0.5 * usage);
   return out;
 }
 

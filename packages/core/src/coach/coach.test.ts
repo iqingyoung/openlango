@@ -80,7 +80,7 @@ test('场景扮演请求放行并进入对话', async () => {
   assert.match(user, /<user_content>/);
 });
 
-test('judge 输出解析 → 信号', async () => {
+test('judge 输出解析 → 信号（证据加权）', async () => {
   const llm = new FakeLLM(() =>
     JSON.stringify({
       corrections: [{ wrong: 'I go yesterday', fix: 'I went yesterday', note: 'past simple' }],
@@ -92,8 +92,38 @@ test('judge 输出解析 → 信号', async () => {
   assert.ok(judge);
   assert.equal(judge!.corrections.length, 1);
   const sig = signalsFromJudge(judge!);
-  assert.ok(sig.speaking! > 0);
-  assert.equal(sig.speaking, 58); // 62 - 1*4
+  // 无子分数时：accuracy = 100-1*15 = 85 → speaking = 0.6*62+0.4*85
+  assert.equal(sig.speaking, 71);
+  // usage = 1/2 目标词命中 = 50 → vocabulary = 0.5*62 + 0.5*50
+  assert.equal(sig.vocabulary, 56);
+});
+
+test('judge 子分数直采：accuracy/lexicalRange/目标词达成率加权', async () => {
+  const llm = new FakeLLM(() =>
+    JSON.stringify({
+      corrections: [],
+      usedTargetWords: ['coffee', 'order'],
+      complexity: 50,
+      accuracy: 90,
+      lexicalRange: 40,
+    }),
+  );
+  const judge = await judgeTurn({ text: 'Can I order a coffee?', reply: 'Sure!', scenario: SCENARIO, vector: VECTOR, llm });
+  assert.ok(judge);
+  assert.equal(judge!.accuracy, 90);
+  const sig = signalsFromJudge(judge!);
+  assert.equal(sig.speaking, Math.round(0.6 * 50 + 0.4 * 90)); // 66
+  // usage = 2/2*100=100 → vocabulary = 0.5*40+0.5*100
+  assert.equal(sig.vocabulary, 70);
+});
+
+test('judge 复杂度缺失但有纠错时仍产出（复杂度兜底 50）', async () => {
+  const llm = new FakeLLM(() =>
+    JSON.stringify({ corrections: [{ wrong: 'a', fix: 'b' }], usedTargetWords: [] }),
+  );
+  const judge = await judgeTurn({ text: 'x', reply: 'y', scenario: SCENARIO, vector: VECTOR, llm });
+  assert.ok(judge);
+  assert.equal(judge!.complexity, 50);
 });
 
 test('judge 失败返回 null 不阻塞', async () => {
