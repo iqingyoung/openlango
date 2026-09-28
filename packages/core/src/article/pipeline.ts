@@ -265,6 +265,16 @@ async function mapGrammarIds(deps: ArticleDeps, body: string, maxTokens?: number
   }
 }
 
+/** 超纲硬门禁阈值（按目标带收紧；合格内容才允许进入学习状态） */
+export const MAX_OVERBAND_RATIO: Record<CEFR, number> = {
+  A1: 0.03,
+  A2: 0.05,
+  B1: 0.08,
+  B2: 0.1,
+  C1: 0.12,
+  C2: 0.15,
+};
+
 export async function generateArticle(opts: GenerateArticleOptions): Promise<ArticleResult> {
   const { llm, search } = opts.deps;
   let found: SearchItem[];
@@ -284,6 +294,7 @@ export async function generateArticle(opts: GenerateArticleOptions): Promise<Art
 
   const targetCefr = bandOf(opts.vector.reading);
   const maxBand = ({ A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 5 } as const)[targetCefr];
+  const maxRatio = MAX_OVERBAND_RATIO[targetCefr];
 
   // 解析失败/截断 → 加倍预算重试一次（再失败则报错透出）
   let draft: { title: string; body: string; quiz: ArticleQuiz[] };
@@ -298,9 +309,17 @@ export async function generateArticle(opts: GenerateArticleOptions): Promise<Art
       (opts.maxTokens ?? 1600) * 2,
     );
   }
-  const ratio = overbandRatio(draft.body, maxBand);
-  if (ratio > 0.1) {
-    draft = await callArticle(opts.deps, opts, sources.slice(0, 4), true); // 超纲重生成一次
+
+  // 超纲硬门禁：校验 → 不达标加严重试一次 → 仍不达标拒绝入库（宁可不生成，不让坏内容进学习状态）
+  let ratio = overbandRatio(draft.body, maxBand);
+  if (ratio > maxRatio) {
+    draft = await callArticle(opts.deps, opts, sources.slice(0, 4), true);
+    ratio = overbandRatio(draft.body, maxBand);
+    if (ratio > maxRatio) {
+      throw new Error(
+        `article: overband gate failed — ratio ${ratio.toFixed(3)} > ${maxRatio} (CEFR ${targetCefr})`,
+      );
+    }
   }
 
   return {
@@ -312,6 +331,6 @@ export async function generateArticle(opts: GenerateArticleOptions): Promise<Art
     quiz: draft.quiz,
     sources,
     flaggedSnippets,
-    overbandRatio: Math.min(ratio, overbandRatio(draft.body, maxBand)),
+    overbandRatio: ratio,
   };
 }

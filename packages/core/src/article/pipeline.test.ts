@@ -83,6 +83,38 @@ test('超纲比例计算与轻量词元化', () => {
   assert.ok(bad > 0.4, `bad ratio: ${bad}`);
 });
 
+test('超纲硬门禁：重试后仍超纲 → 拒绝（坏内容不进学习状态）', async () => {
+  // 低级别（A1，maxRatio 0.03）+ 高难正文 → 门禁重试后仍不过 → 抛错
+  const llm = new FakeLLM((req: ChatRequest, i: number) => {
+    if (i <= 1) {
+      return JSON.stringify({
+        title: 'Hard article',
+        body:
+          'The quixotic serendipity perplexed the sophisticated philosopher. '.repeat(8) +
+          'The phenomenon juxtaposed incontrovertible epistemological paradigms throughout historiography.',
+        quiz: [],
+      });
+    }
+    return JSON.stringify({ grammarIds: [] });
+  });
+  const search = new FakeSearch([{ title: 't', url: 'https://a.example/1', snippet: 's' }]);
+  await assert.rejects(
+    generateArticle({
+      topic: 'philosophy',
+      vector: { reading: 20, listening: 20, speaking: 20, vocabulary: 20, grammar: 20 },
+      learned: new Set(),
+      deps: { llm, search },
+    }),
+    /overband gate failed/,
+  );
+  assert.ok(llm.calls.length >= 2); // 首次 + 门禁重试
+});
+
+test('超纲硬门禁：达标内容正常通过并记录比例', async () => {
+  const out = await generateArticle({ topic: 'AI chips', vector: VECTOR, learned: new Set(), deps: deps() });
+  assert.ok(out.overbandRatio <= 0.1); // B2 阈值
+});
+
 test('splitTopics：强分隔符切多话题，话题内空格保留', () => {
   assert.deepEqual(splitTopics('ai、politics'), ['ai', 'politics']);
   assert.deepEqual(splitTopics('gpt astra'), ['gpt astra']);
