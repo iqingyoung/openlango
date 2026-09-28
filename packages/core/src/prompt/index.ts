@@ -5,7 +5,7 @@
 
 export const PROMPT_VERSIONS = {
   corePolicy: 1,
-  coach: 2,
+  coach: 3,
   article: 2,
   basic: 1,
   placement: 1,
@@ -58,7 +58,14 @@ export function renderSystemPrompt(opts: RenderSystemPromptOptions): string {
   ].join('\n');
 }
 
-/** 用户内容包装：harness 侧统一出口，配合 guard 隔离 */
+/** XML 转义：LLM/用户来源的字符串进任何标签块前必须经过，防止闭合标签注入 */
+export function escapeXml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) =>
+    c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&apos;',
+  );
+}
+
+/** 用户内容包装：harness 侧统一出口，配合 guard 隔离；转义保证标签不可被内容闭合 */
 export function wrapUserContent(text: string): string {
-  return `<user_content>\n${text}\n</user_content>`;
+  return `<user_content>\n${escapeXml(text)}\n</user_content>`;
 }
