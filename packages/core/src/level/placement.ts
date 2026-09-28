@@ -78,8 +78,12 @@ export class PlacementEngine {
     return clampTheta(this.theta + (rng() * 16 - 8));
   }
 
-  /** 五维初值：grammar 取实测，vocabulary/reading 同锚，listening/speaking 低估锚定 */
-  result(): { vector: Record<string, number>; confidence: Record<string, number> } {
+  /** 五维初值：grammar/reading/vocabulary 文字实测（同锚），listening/speaking 低估锚定 */
+  result(): {
+    vector: Record<string, number>;
+    confidence: Record<string, number>;
+    basis: Record<string, 'measured' | 'provisional'>;
+  } {
     const g = this.theta;
     const conf = Math.min(0.9, 0.35 + this.count * 0.07);
     return {
@@ -96,6 +100,14 @@ export class PlacementEngine {
         vocabulary: conf * 0.7,
         listening: conf * 0.4,
         speaking: conf * 0.4,
+      },
+      // 诚实标注：文字题只能实测书面三维，听说两维是锚定初值（随使用校准）
+      basis: {
+        grammar: 'measured',
+        reading: 'measured',
+        vocabulary: 'measured',
+        listening: 'provisional',
+        speaking: 'provisional',
       },
     };
   }

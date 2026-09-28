@@ -13,6 +13,9 @@ interface Item {
 interface Bands {
   [skill: string]: string;
 }
+interface Basis {
+  [skill: string]: 'measured' | 'provisional';
+}
 
 const SKILL_ZH: Record<string, string> = {
   reading: '阅读', listening: '听力', speaking: '口语', vocabulary: '词汇', grammar: '语法',
@@ -24,6 +27,7 @@ export default function PlacementPage() {
   const [progress, setProgress] = useState(0);
   const [feedback, setFeedback] = useState<boolean | null>(null);
   const [finished, setFinished] = useState<Bands | null>(null);
+  const [basis, setBasis] = useState<Basis | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function start() {
@@ -55,6 +59,7 @@ export default function PlacementPage() {
     setFeedback(data.finished ? null : data.correct);
     if (data.finished) {
       setFinished(data.bands);
+      setBasis(data.basis ?? null);
       setItem(null);
     } else {
       setItem(data.item);
@@ -111,9 +116,15 @@ export default function PlacementPage() {
               <div key={skill} className="flex-1 rounded-lg border border-border bg-muted p-3 text-center">
                 <div className="text-xs text-muted-foreground">{SKILL_ZH[skill]}</div>
                 <div className="text-[22px] font-bold text-primary">{cefr}</div>
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {basis?.[skill] === 'provisional' ? '◌ 初估' : '● 实测'}
+                </div>
               </div>
             ))}
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            听力/口语为锚定初估，会在对话与阅读中自动校准。文字定级范围为 A1–B2，C1/C2 需随使用校准。
+          </p>
           <div className="mt-4 flex gap-3">
             <Link href="/article"><Button>去读文章 →</Button></Link>
             <Link href="/coach"><Button variant="ghost">去对话 →</Button></Link>

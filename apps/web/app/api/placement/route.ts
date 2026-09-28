@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       .set({ resultJson: JSON.stringify(state) })
       .where(eq(placementRuns.id, body.runId));
     const bands = await getBands(learner.id);
-    return NextResponse.json({ finished: true, bands, correct });
+    return NextResponse.json({ finished: true, bands, basis: result.basis, correct });
   }
 
   const item = nextPlacementItem(engine, state.engine, rng);
