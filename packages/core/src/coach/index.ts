@@ -10,6 +10,8 @@ import { type SkillVector } from '../level/cefr.ts';
 import { lookupWord, GRAMMAR } from '../data/index.ts';
 import { lemmatize } from '../article/pipeline.ts';
 import { parseJsonLoose } from '../util/json.ts';
+import { parseLLMOutput } from '../util/llm-schema.ts';
+import { z } from 'zod';
 
 const GRAMMAR_IDS = new Set(GRAMMAR.map((g) => g.id));
 
@@ -72,31 +74,39 @@ export async function generateScenario(opts: {
           { role: 'user', content: wrapUserContent(`learner interest: ${opts.interest}`) },
         ],
       });
-      const parsed = parseJsonLoose(res.text) as Partial<Scenario>;
-      // 目标词校验：整词命中保留；短语逐词拆分，保留表内命中的部分（只映射不发明）
-      const words: string[] = [];
-      for (const w of parsed.targetWords ?? []) {
-        if (typeof w !== 'string' || w.length < 2) continue;
-        const clean = w.toLowerCase().replace(/[^a-z' -]/g, '').trim();
-        if (!clean) continue;
-        const whole = lookupWord(clean) ?? lookupWord(lemmatizeLite(clean));
-        if (whole) {
-          if (!words.includes(whole.word)) words.push(whole.word);
-          continue;
+      // schema 校验：parse 成功 ≠ 合法；限长用截断而非拒绝，避免整场景报废
+      const clipped = (n: number) => z.string().min(1).transform((s) => s.slice(0, n));
+      const parsed = parseLLMOutput(
+        z.object({
+          title: clipped(120),
+          persona: clipped(240),
+          goal: clipped(240),
+          targetWords: z.array(z.string()).max(20).catch([]),
+        }),
+        res.text,
+      );
+      if (parsed) {
+        // 目标词校验：整词命中保留；短语逐词拆分，保留表内命中的部分（只映射不发明）
+        const words: string[] = [];
+        for (const w of parsed.targetWords) {
+          if (w.length < 2) continue;
+          const clean = w.toLowerCase().replace(/[^a-z' -]/g, '').trim();
+          if (!clean) continue;
+          const whole = lookupWord(clean) ?? lookupWord(lemmatizeLite(clean));
+          if (whole) {
+            if (!words.includes(whole.word)) words.push(whole.word);
+            continue;
+          }
+          for (const part of clean.split(/\s+/)) {
+            const hit = lookupWord(part) ?? lookupWord(lemmatizeLite(part));
+            if (hit && !words.includes(hit.word)) words.push(hit.word);
+          }
         }
-        for (const part of clean.split(/\s+/)) {
-          const hit = lookupWord(part) ?? lookupWord(lemmatizeLite(part));
-          if (hit && !words.includes(hit.word)) words.push(hit.word);
-        }
-      }
-      if (parsed.title && parsed.persona && parsed.goal) {
-        // LLM 产物进入 system prompt 前统一截断（长度即攻击面；转义由 scenarioBrief 负责）
-        const clip = (v: unknown, n: number) => (typeof v === 'string' ? v.slice(0, n) : '');
         return {
           scenario: {
-            title: clip(parsed.title, 120),
-            persona: clip(parsed.persona, 240),
-            goal: clip(parsed.goal, 240),
+            title: parsed.title,
+            persona: parsed.persona,
+            goal: parsed.goal,
             targetWords: words.slice(0, 5),
           },
           source: 'llm',
@@ -269,14 +279,12 @@ export async function checkRoleConsistency(opts: {
         },
       ],
     });
-    const parsed = parseJsonLoose(res.text) as Partial<DriftReport>;
-    if (typeof parsed.drifted !== 'boolean') return null;
-    return {
-      drifted: parsed.drifted,
-      reasons: Array.isArray(parsed.reasons)
-        ? parsed.reasons.filter((r): r is string => typeof r === 'string').slice(0, 3)
-        : [],
-    };
+    const parsed = parseLLMOutput(
+      z.object({ drifted: z.boolean(), reasons: z.array(z.string()).max(10).catch([]) }),
+      res.text,
+    );
+    if (!parsed) return null;
+    return { drifted: parsed.drifted, reasons: parsed.reasons.slice(0, 3) };
   } catch {
     return null; // 审计失败静默
   }

@@ -9,7 +9,19 @@ import { renderSystemPrompt, wrapUserContent } from '../prompt/index.ts';
 import { bandOf } from '../level/level-manager.ts';
 import { type CEFR, type SkillVector } from '../level/cefr.ts';
 import { lookupWord, GRAMMAR, type VocabEntry } from '../data/index.ts';
-import { parseJsonLoose } from '../util/json.ts';
+import { parseLLMOutput } from '../util/llm-schema.ts';
+import { z } from 'zod';
+
+const quizItemSchema = z.object({
+  q: z.string().min(1).max(500),
+  options: z.tuple([z.string(), z.string(), z.string(), z.string()]),
+  answerIndex: z.number().int().min(0).max(3), // 越界答案（如 99）整题拒绝
+});
+const articleSchema = z.object({
+  title: z.string().max(300).catch(''),
+  body: z.string().min(1),
+  quiz: z.array(z.unknown()).max(10).catch([]),
+});
 
 export interface ArticleQuiz {
   q: string;
@@ -213,17 +225,15 @@ async function callArticle(
   if (res.finishReason === 'length') {
     throw new Error(`article: output truncated at max_tokens=${maxTokens ?? 'default'}`);
   }
-  let parsed: { title?: string; body?: string; quiz?: ArticleQuiz[] };
-  try {
-    parsed = parseJsonLoose(res.text) as { title?: string; body?: string; quiz?: ArticleQuiz[] };
-  } catch (err) {
-    throw new Error(`article: invalid JSON (${(err as Error).message.slice(0, 120)})`);
-  }
-  if (!parsed.body) throw new Error('article: LLM returned no body');
+  const parsed = parseLLMOutput(articleSchema, res.text);
+  if (!parsed || !parsed.body) throw new Error('article: invalid JSON/schema or missing body');
   return {
-    title: parsed.title ?? opts.topic,
+    title: parsed.title || opts.topic,
     body: parsed.body,
-    quiz: (parsed.quiz ?? []).filter((q) => q.options?.length === 4 && typeof q.answerIndex === 'number'),
+    quiz: parsed.quiz.flatMap((q) => {
+      const r = quizItemSchema.safeParse(q);
+      return r.success ? [r.data] : [];
+    }),
   };
 }
 
@@ -243,9 +253,12 @@ async function mapGrammarIds(deps: ArticleDeps, body: string, maxTokens?: number
         { role: 'user', content: `syllabus: ${list}\n\narticle:\n${body.slice(0, 3000)}` },
       ],
     });
-    const parsed = parseJsonLoose(res.text) as { grammarIds?: unknown };
-    if (!Array.isArray(parsed.grammarIds)) return [];
-    const valid = parsed.grammarIds.filter((id): id is string => typeof id === 'string' && GRAMMAR_IDS.has(id));
+    const parsed = parseLLMOutput(
+      z.object({ grammarIds: z.array(z.string()).max(20).catch([]) }),
+      res.text,
+    );
+    if (!parsed) return [];
+    const valid = parsed.grammarIds.filter((id) => GRAMMAR_IDS.has(id));
     return valid.slice(0, 6); // 代码侧再兜底一次上限
   } catch {
     return []; // judge 失败不阻塞主流程
