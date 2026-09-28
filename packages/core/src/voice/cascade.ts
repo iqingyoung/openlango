@@ -5,7 +5,7 @@
  * abort 以 done（blocked:false）收尾，不算错误。
  * 每步耗时都进 metrics（管道可观测验收）。
  */
-import type { ASRProvider, ChatMessage, LLMProvider, TTSProvider } from '../types.ts';
+import type { ASRProvider, ChatMessage, EvaluatorProvider, LLMProvider, TTSProvider } from '../types.ts';
 import { classifyInput } from '../guard/index.ts';
 import { splitSentences } from './types.ts';
 import type { VoiceEvent, VoiceTurnMetrics } from './types.ts';
@@ -22,6 +22,8 @@ export interface CascadeTurnOptions {
   /** judge 用的两维等级（conversation 只关心口语/词汇） */
   vector: { speaking: number; vocabulary: number };
   llm: LLMProvider;
+  /** 独立评分通道（可选）；缺省时 judge 用 llm */
+  evaluator?: EvaluatorProvider;
   asr: ASRProvider;
   tts?: TTSProvider;
   voice?: string;
@@ -138,6 +140,7 @@ export async function* cascadeVoiceTurn(opts: CascadeTurnOptions): AsyncGenerato
     let judge: TurnJudge | null = null;
     try {
       judge = await judgeTurn({
+        evaluator: opts.evaluator,
         text: transcript.text,
         reply,
         scenario: opts.scenario,

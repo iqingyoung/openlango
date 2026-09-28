@@ -17,6 +17,16 @@ test('注册表：ollama 创建', () => {
   assert.equal(llm.driver, 'ollama');
 });
 
+test('注册表：evaluator/llm 创建（六接口声明与实现对齐）', () => {
+  const ev = createProvider('evaluator', {
+    driver: 'llm',
+    baseURL: 'https://api.example.com/v1',
+    model: 'cheap-model',
+  });
+  assert.equal(ev.driver, 'llm');
+  assert.equal(typeof ev.evaluate, 'function');
+});
+
 test('注册表：未知 driver 报错', () => {
   assert.throws(() => createProvider('llm', { driver: 'nope' }), /no provider registered/);
 });

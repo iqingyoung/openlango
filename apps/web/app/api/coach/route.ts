@@ -3,6 +3,7 @@ import { asc, eq } from 'drizzle-orm';
 import {
   ensureLearner,
   getLlm,
+  getEvaluator,
   getDb,
   loadSkillStates,
   recordLearningEvidence,
@@ -157,6 +158,7 @@ export async function POST(req: Request) {
           scenario,
           vector,
           llm,
+          evaluator: getEvaluator() ?? undefined,
           maxTokens: judgeGen.maxTokens,
         });
         const idx = prevTurns.length;

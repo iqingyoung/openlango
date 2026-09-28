@@ -41,7 +41,13 @@ tts:
   voice: en-US-AriaNeural
 
 # 能力位可分开路由，丰俭由人：
-# judge/纠错用最便宜档 → 再加一个 llm 副位；对话用中档；文章生成可高档。
+# judge/纠错用最便宜档 → evaluator 独立能力位（LLM ≠ Evaluator）；对话用中档；文章生成可高档。
+# evaluator 配置后 judgeTurn 走独立评分通道，不再复用对话 LLM：
+# evaluator:
+#   driver: llm
+#   baseURL: ${OPENLANGO_EVALUATOR_BASE_URL}
+#   apiKeyEnv: OPENLANGO_EVALUATOR_API_KEY
+#   model: ${OPENLANGO_EVALUATOR_MODEL}
 # M2 启用语音后取消注释：
 # asr:
 #   driver: groq-whisper

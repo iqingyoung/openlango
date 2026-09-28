@@ -6,6 +6,7 @@ import type {
   ASRProvider,
   CapabilityConfig,
   DriverConfig,
+  EvaluatorProvider,
   ProviderKind,
   SearchProvider,
   TTSProvider,
@@ -16,6 +17,7 @@ import { createRssSearch } from './search-rss.ts';
 import { createOpenAITranscriptions } from './asr-openai-transcriptions.ts';
 import { createMsEdgeTTS } from './tts-msedge.ts';
 import { createOpenAISpeech } from './tts-openai-speech.ts';
+import { createLLMEvaluator } from './evaluator-llm.ts';
 
 const REGISTRY: Record<string, Record<string, (config: DriverConfig) => unknown>> = {
   llm: {
@@ -32,6 +34,10 @@ const REGISTRY: Record<string, Record<string, (config: DriverConfig) => unknown>
     msedge: createMsEdgeTTS,
     'openai-speech': createOpenAISpeech,
   },
+  evaluator: {
+    llm: createLLMEvaluator,
+  },
+  // realtime：接口已冻结，驱动按 M5（S2S 可选管线，GLM-Realtime 首发）接入
 };
 
 export function createProvider(kind: ProviderKind, config: DriverConfig): unknown {
@@ -48,9 +54,10 @@ export interface ProviderSet {
   search?: SearchProvider;
   asr?: ASRProvider;
   tts?: TTSProvider;
+  evaluator?: EvaluatorProvider;
 }
 
-/** 配置 → 全部已配置能力位的实例。realtime/evaluator 按计划 M4 接入。 */
+/** 配置 → 全部已配置能力位的实例。realtime 驱动按 M5 接入；evaluator 已就绪（llm 驱动）。 */
 export function createProviders(config: CapabilityConfig): ProviderSet {
   const out: ProviderSet = {};
   for (const kind of Object.keys(config) as ProviderKind[]) {

@@ -2,13 +2,14 @@
  * 文本 Coach：场景生成 → 对话回合（guard 前置）→ 回合 judge（纠错/目标词/复杂度）→ 信号。
  * 劫持输入直接返回固定模板 nudge，不调 LLM（成本+安全双收益）。
  */
-import type { ChatMessage, LLMProvider } from '../types.ts';
+import type { ChatMessage, EvaluatorProvider, LLMProvider } from '../types.ts';
 import { classifyInput } from '../guard/index.ts';
 import { renderSystemPrompt, wrapUserContent, escapeXml } from '../prompt/index.ts';
 import { bandOf } from '../level/level-manager.ts';
 import { type SkillVector } from '../level/cefr.ts';
 import { lookupWord, GRAMMAR } from '../data/index.ts';
 import { lemmatize } from '../article/pipeline.ts';
+import { parseJsonLoose } from '../util/json.ts';
 import { parseLLMOutput } from '../util/llm-schema.ts';
 import { z } from 'zod';
 
@@ -185,7 +186,20 @@ export async function coachTurn(opts: CoachTurnOptions): Promise<CoachTurnResult
   return { blocked: false, reply: res.text, category: verdict.category };
 }
 
-/** 回合 judge：与对话异步分离，失败不影响对话（返回 null） */
+const judgeSchema = z.object({
+  corrections: z
+    .array(z.object({ wrong: z.string(), fix: z.string(), note: z.string().optional() }))
+    .max(6)
+    .catch([]),
+  usedTargetWords: z.array(z.string()).max(20).catch([]),
+  complexity: z.number().min(0).max(100).optional(),
+  accuracy: z.number().min(0).max(100).optional(),
+  lexicalRange: z.number().min(0).max(100).optional(),
+  grammarIds: z.array(z.string()).max(10).catch([]),
+});
+
+/** 回合 judge：与对话异步分离，失败不影响对话（返回 null）。
+ * 配置了 evaluator 能力位时走独立评分通道（LLM ≠ Evaluator 的架构声明在此落地）。 */
 export async function judgeTurn(opts: {
   text: string;
   reply: string;
@@ -193,66 +207,59 @@ export async function judgeTurn(opts: {
   /** judge 只关心口语/词汇两维 */
   vector: { speaking: number; vocabulary: number };
   llm: LLMProvider;
+  /** 独立评分通道（可选）；缺省时用 llm */
+  evaluator?: EvaluatorProvider;
   maxTokens?: number;
 }): Promise<TurnJudge | null> {
-  try {
-    const res = await opts.llm.chat({
-      json: true,
-      temperature: 0,
-      maxTokens: opts.maxTokens,
-      messages: [
-        {
-          role: 'system',
-          content: renderSystemPrompt({
-            module: 'coach',
-            task: `Judge the learner's last English utterance silently (the learner never sees this). Report: corrections (grammar/word choice, max 3), which target words were used, three 0-100 scores — complexity (vocabulary range & sentence structure of the utterance), accuracy (grammatical correctness), lexicalRange (breadth of vocabulary actually used) — and grammarIds: map each correction to the fixed syllabus ids given in the task (never invent ids). Respond JSON only: {"corrections":[{"wrong":string,"fix":string,"note":string}],"usedTargetWords":string[],"complexity":number,"accuracy":number,"lexicalRange":number,"grammarIds":string[]}\nSyllabus ids: ${GRAMMAR.map((g) => g.id).join(',')}`,
-            learnerState: `speaking: ${bandOf(opts.vector.speaking)}`,
-          }),
-        },
-        {
-          role: 'user',
-          content: wrapUserContent(
-            `learner said: ${opts.text}\nassistant replied: ${opts.reply}\ntarget words: ${opts.scenario.targetWords.join(', ')}`,
-          ),
-        },
-      ],
-    });
-    const parsed = parseLLMOutput(
-      z.object({
-        corrections: z
-          .array(z.object({ wrong: z.string(), fix: z.string(), note: z.string().optional() }))
-          .max(6)
-          .catch([]),
-        usedTargetWords: z.array(z.string()).max(20).catch([]),
-        complexity: z.number().min(0).max(100).optional(),
-        accuracy: z.number().min(0).max(100).optional(),
-        lexicalRange: z.number().min(0).max(100).optional(),
-        grammarIds: z.array(z.string()).max(10).catch([]),
+  const messages: ChatMessage[] = [
+    {
+      role: 'system',
+      content: renderSystemPrompt({
+        module: 'coach',
+        task: `Judge the learner's last English utterance silently (the learner never sees this). Report: corrections (grammar/word choice, max 3), which target words were used, three 0-100 scores — complexity (vocabulary range & sentence structure of the utterance), accuracy (grammatical correctness), lexicalRange (breadth of vocabulary actually used) — and grammarIds: map each correction to the fixed syllabus ids given in the task (never invent ids). Respond JSON only: {"corrections":[{"wrong":string,"fix":string,"note":string}],"usedTargetWords":string[],"complexity":number,"accuracy":number,"lexicalRange":number,"grammarIds":string[]}\nSyllabus ids: ${GRAMMAR.map((g) => g.id).join(',')}`,
+        learnerState: `speaking: ${bandOf(opts.vector.speaking)}`,
       }),
-      res.text,
-    );
-    if (!parsed) return null;
-    if (parsed.complexity === undefined && parsed.corrections.length === 0) return null;
-    // grammarIds 只映射固定清单（只映射不发明红线）
-    const grammarIds = parsed.grammarIds.filter((id) => GRAMMAR_IDS.has(id));
-    // 目标词达成率（有目标词才有意义）
-    const total = opts.scenario.targetWords.length;
-    const targetWordUsage =
-      total > 0
-        ? Math.min(100, Math.round((100 * parsed.usedTargetWords.filter((w) => opts.scenario.targetWords.includes(w)).length) / total))
-        : undefined;
-    return {
-      corrections: parsed.corrections.slice(0, 3),
-      usedTargetWords: parsed.usedTargetWords,
-      complexity: parsed.complexity ?? 50,
-      accuracy: parsed.accuracy,
-      lexicalRange: parsed.lexicalRange,
-      targetWordUsage,
-      grammarIds,
-    };
+    },
+    {
+      role: 'user',
+      content: wrapUserContent(
+        `learner said: ${opts.text}\nassistant replied: ${opts.reply}\ntarget words: ${opts.scenario.targetWords.join(', ')}`,
+      ),
+    },
+  ];
+  let obj: unknown = null;
+  try {
+    if (opts.evaluator) {
+      const r = await opts.evaluator.evaluate({ kind: 'turn', payload: messages });
+      obj = r.raw;
+    } else {
+      const res = await opts.llm.chat({ json: true, temperature: 0, maxTokens: opts.maxTokens, messages });
+      obj = parseJsonLoose(res.text);
+    }
   } catch {
     return null;
   }
+  const result = judgeSchema.safeParse(obj);
+  if (!result.success) return null;
+  const parsed = result.data;
+  if (parsed.complexity === undefined && parsed.corrections.length === 0) return null;
+  // grammarIds 只映射固定清单（只映射不发明红线）
+  const grammarIds = parsed.grammarIds.filter((id) => GRAMMAR_IDS.has(id));
+  // 目标词达成率（有目标词才有意义）
+  const total = opts.scenario.targetWords.length;
+  const targetWordUsage =
+    total > 0
+      ? Math.min(100, Math.round((100 * parsed.usedTargetWords.filter((w) => opts.scenario.targetWords.includes(w)).length) / total))
+      : undefined;
+  return {
+    corrections: parsed.corrections.slice(0, 3),
+    usedTargetWords: parsed.usedTargetWords,
+    complexity: parsed.complexity ?? 50,
+    accuracy: parsed.accuracy,
+    lexicalRange: parsed.lexicalRange,
+    targetWordUsage,
+    grammarIds,
+  };
 }
 
 /** judge 证据 → 等级信号（θ 同尺度 0-100）。

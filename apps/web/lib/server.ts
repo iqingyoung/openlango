@@ -10,7 +10,7 @@ import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { and, asc, eq } from 'drizzle-orm';
 import { loadConfig } from '@openlango/providers/config';
 import { createProviders, type ProviderSet } from '@openlango/providers';
-import type { ASRProvider, LLMProvider, OpenLangoConfig, SearchProvider, Skill, TTSProvider } from '@openlango/core';
+import type { ASRProvider, EvaluatorProvider, LLMProvider, OpenLangoConfig, SearchProvider, Skill, TTSProvider } from '@openlango/core';
 import {
   learners,
   skillLevels,
@@ -72,6 +72,11 @@ export function getProviders() {
 
 export function getLlm(): LLMProvider | null {
   return getProviders().llm ?? null;
+}
+
+/** 独立评分通道：配置了 evaluator 能力位才有（judge 与对话 LLM 解耦） */
+export function getEvaluator(): EvaluatorProvider | null {
+  return getProviders().evaluator ?? null;
 }
 
 export function getAsr(): ASRProvider | null {
