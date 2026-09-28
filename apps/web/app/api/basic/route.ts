@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { and, asc, eq } from 'drizzle-orm';
-import { ensureLearner, getDb, applySignal, unresolvedErrorCounts, resolveLedgerForGrammar } from '@/lib/server';
+import { ensureLearner, getDb, recordLearningEvidence, unresolvedErrorCounts, resolveLedgerForGrammar } from '@/lib/server';
 import {
   vocabStates,
   grammarStates,
@@ -141,7 +141,7 @@ export async function POST(req: Request) {
       })
       .where(eq(vocabStates.id, body.id));
     const p = { 1: 30, 2: 50, 3: 70, 4: 85 }[body.rating];
-    await applySignal(learner.id, 'vocabulary', p);
+    await recordLearningEvidence(learner.id, { skill: 'vocabulary', score: p, source: 'basic_drill' });
     return NextResponse.json({ ok: true, state: wordState });
   }
 
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
       dueAt: next.dueAt,
     })
     .where(eq(grammarStates.id, body.id));
-  await applySignal(learner.id, 'grammar', correct ? 70 : 30);
+  await recordLearningEvidence(learner.id, { skill: 'grammar', score: correct ? 70 : 30, source: 'basic_drill' });
   if (correct) await resolveLedgerForGrammar(learner.id, row.grammarId); // M3：答对销账
   return NextResponse.json({ ok: true, correct, answer: drill.options[drill.answer], state });
 }

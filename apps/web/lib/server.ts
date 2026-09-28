@@ -14,6 +14,7 @@ import type { ASRProvider, LLMProvider, OpenLangoConfig, SearchProvider, Skill, 
 import {
   learners,
   skillLevels,
+  learningEvents,
   newVectorState,
   applySignal as applySignalCore,
   displayBands,
@@ -175,10 +176,37 @@ export async function saveSkillStates(learnerId: string, state: SkillVectorState
   }
 }
 
-export async function applySignal(learnerId: string, skill: Skill, p: number): Promise<void> {
+/** 学习证据：任何模块要影响 learner state，只能提交证据，不得直接写 skill_levels */
+export type EvidenceSource = 'coach_judge' | 'voice_judge' | 'article_quiz' | 'basic_drill' | 'placement';
+
+export interface LearningEvidence {
+  skill: Skill;
+  /** 0-100 θ 同尺度表现分，越界截断，非数值静默丢弃 */
+  score: number;
+  source: EvidenceSource;
+  detail?: string;
+}
+
+/**
+ * learner state 唯一运行时写入入口：Evidence → LevelManager → DB + 台账。
+ * （例外：placement 完成时的基线写入走 calibration 路径，不经此处）
+ */
+export async function recordLearningEvidence(learnerId: string, evidence: LearningEvidence): Promise<void> {
+  if (!SKILLS.includes(evidence.skill)) throw new Error(`recordLearningEvidence: unknown skill ${evidence.skill}`);
+  const score = Number(evidence.score);
+  if (!Number.isFinite(score)) return; // 非法信号（judge 失败等）静默丢弃
+  const clamped = Math.max(0, Math.min(100, score));
   const state = await loadSkillStates(learnerId);
-  state[skill] = applySignalCore(state[skill], p);
+  state[evidence.skill] = applySignalCore(state[evidence.skill], clamped);
   await saveSkillStates(learnerId, state);
+  await getDb().insert(learningEvents).values({
+    id: crypto.randomUUID(),
+    learnerId,
+    skill: evidence.skill,
+    score: clamped,
+    source: evidence.source,
+    detail: evidence.detail ?? null,
+  });
 }
 
 /** 展示用 bands（UI 永不见 θ 数值） */

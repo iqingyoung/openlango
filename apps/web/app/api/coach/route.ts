@@ -5,7 +5,7 @@ import {
   getLlm,
   getDb,
   loadSkillStates,
-  applySignal,
+  recordLearningEvidence,
   getGenerationParams,
   getLastTurnDrift,
   insertLedgerRows,
@@ -176,8 +176,10 @@ export async function POST(req: Request) {
             if (judge) {
               await insertLedgerRows(learner.id, session.id, judge);
               const sig = signalsFromJudge(judge);
-              if (typeof sig.speaking === 'number') await applySignal(learner.id, 'speaking', sig.speaking);
-              if (typeof sig.vocabulary === 'number') await applySignal(learner.id, 'vocabulary', sig.vocabulary);
+              if (typeof sig.speaking === 'number')
+                await recordLearningEvidence(learner.id, { skill: 'speaking', score: sig.speaking, source: 'coach_judge' });
+              if (typeof sig.vocabulary === 'number')
+                await recordLearningEvidence(learner.id, { skill: 'vocabulary', score: sig.vocabulary, source: 'coach_judge' });
             }
             await auditTurn({ turnId, reply: full, scenario, llm });
             await checkRecalibration(learner.id);

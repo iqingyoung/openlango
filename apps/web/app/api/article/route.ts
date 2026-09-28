@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { ensureLearner, getLlm, getDb, loadSkillStates, applySignal, getGenerationParams } from '@/lib/server';
+import { ensureLearner, getLlm, getDb, loadSkillStates, recordLearningEvidence, getGenerationParams } from '@/lib/server';
 import { createProviders } from '@openlango/providers';
 import {
   articles,
@@ -173,8 +173,8 @@ export async function POST(req: Request) {
     if (body.answers[i] === q.answerIndex) correctCount++;
   });
   const p = quiz.length > 0 ? 30 + (70 * correctCount) / quiz.length : 50;
-  await applySignal(learner.id, 'reading', p);
-  await applySignal(learner.id, 'vocabulary', p);
+  await recordLearningEvidence(learner.id, { skill: 'reading', score: p, source: 'article_quiz' });
+  await recordLearningEvidence(learner.id, { skill: 'vocabulary', score: p, source: 'article_quiz' });
   return NextResponse.json({ total: quiz.length, correctCount });
 }
 

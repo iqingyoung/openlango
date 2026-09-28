@@ -146,3 +146,18 @@ export const errorLedger = sqliteTable(
   },
   (t) => [index('error_learner_resolved').on(t.learnerId, t.resolved)],
 );
+
+/** 学习证据台账：技能信号的唯一审计源（哪维/多少分/来自哪条管线），回答"为什么升级" */
+export const learningEvents = sqliteTable(
+  'learning_events',
+  {
+    id: text('id').primaryKey(),
+    learnerId: text('learner_id').notNull(),
+    skill: text('skill').notNull(), // reading|listening|speaking|vocabulary|grammar
+    score: real('score').notNull(), // 0-100，θ 同尺度
+    source: text('source').notNull(), // coach_judge|voice_judge|article_quiz|basic_drill|placement
+    detail: text('detail'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => [index('learning_events_learner_time').on(t.learnerId, t.createdAt)],
+);
