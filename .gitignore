@@ -3,7 +3,7 @@ dist/
 .next/
 *.tsbuildinfo
 data/*.db
-data/*.db-journal
+data/*.db-*
 .env
 .env.local
 .DS_Store
