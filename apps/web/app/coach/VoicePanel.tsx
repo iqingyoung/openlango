@@ -13,6 +13,8 @@ export interface VoiceMetrics {
 
 interface VoicePanelProps {
   sessionId: string;
+  /** 紧凑单行形态：嵌入聊天列（无独立卡片边距） */
+  slim?: boolean;
   onUserText: (text: string) => void;
   /** null = 新建助手占位，字符串 = 追加增量 */
   onAssistantDelta: (delta: string | null) => void;
@@ -44,7 +46,7 @@ const STATUS_LABEL: Record<VStatus, string> = {
   speaking: '🔊 教练 speaking（开口即打断）',
 };
 
-export default function VoicePanel({ sessionId, onUserText, onAssistantDelta, onAssistantFinal }: VoicePanelProps) {
+export default function VoicePanel({ sessionId, slim, onUserText, onAssistantDelta, onAssistantFinal }: VoicePanelProps) {
   const [status, setStatus] = useState<VStatus>('off');
   const [metrics, setMetrics] = useState<VoiceMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -331,16 +333,30 @@ export default function VoicePanel({ sessionId, onUserText, onAssistantDelta, on
 
   useEffect(() => () => stop(), [stop]); // 卸载清理
 
+  const statusRow = (
+    <div className="flex flex-wrap items-center gap-3">
+      {status === 'off' ? (
+        <Button onClick={start} className={slim ? 'px-3 py-1.5 text-[13px]' : ''}>🎤 开启语音模式</Button>
+      ) : (
+        <Button variant="danger" onClick={stop} className={slim ? 'px-3 py-1.5 text-[13px]' : ''}>⏹ 结束语音</Button>
+      )}
+      <div className={`text-sm text-muted-foreground ${slim ? 'text-[12px]' : 'min-w-52'}`}>{STATUS_LABEL[status]}</div>
+      {slim && metrics && (
+        <span className="text-[11px] text-muted-foreground">
+          ASR {metrics.asrMs}ms · 首 token {metrics.firstTokenMs ?? '-'}ms · 首音频 {metrics.firstAudioMs ?? '-'}ms
+        </span>
+      )}
+      {error && <div className={`text-[12px] text-danger ${slim ? 'w-full' : ''}`}>{error}</div>}
+    </div>
+  );
+
+  if (slim) {
+    return <div className="shrink-0 rounded-lg border border-border bg-card px-3 py-2">{statusRow}</div>;
+  }
+
   return (
     <Card className="mb-4">
-      <div className="flex items-center gap-3">
-        {status === 'off' ? (
-          <Button onClick={start}>🎤 开启语音模式</Button>
-        ) : (
-          <Button variant="danger" onClick={stop}>⏹ 结束语音</Button>
-        )}
-        <div className="min-w-52 text-sm text-muted-foreground">{STATUS_LABEL[status]}</div>
-      </div>
+      {statusRow}
       {metrics && (
         <div className="mt-2 inline-block rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
           ASR {metrics.asrMs}ms · 首 token {metrics.firstTokenMs ?? '-'}ms · 首音频 {metrics.firstAudioMs ?? '-'}ms · 总 {metrics.totalMs}ms

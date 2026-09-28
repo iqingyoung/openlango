@@ -92,3 +92,14 @@ export function displayBands(state: SkillVectorState): Record<Skill, CEFR> {
     grammar: bandOf(state.grammar.theta),
   };
 }
+
+/**
+ * 带内进度 ∈ [0,1]：距下一 CEFR 带有多远（顶带以 100 为满）。
+ * UI 只展示进度点，不暴露 θ 数值本身。
+ */
+export function bandProgress(theta: number): number {
+  const idx = bandIndex(theta);
+  const min = CEFR_BANDS[idx]!.min;
+  const max = idx + 1 < CEFR_BANDS.length ? CEFR_BANDS[idx + 1]!.min : 100;
+  return Math.max(0, Math.min(1, (theta - min) / (max - min)));
+}

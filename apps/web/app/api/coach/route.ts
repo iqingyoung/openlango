@@ -27,10 +27,32 @@ import {
   type Scenario,
 } from '@openlango/core';
 
+/** 恢复历史会话：仪表盘「继续练习」直达（GET /api/coach?resume=<sessionId>） */
+export async function GET(req: Request) {
+  const sessionId = new URL(req.url).searchParams.get('resume');
+  if (!sessionId) return NextResponse.json({ error: 'resume 参数缺失' }, { status: 400 });
+  const db = getDb();
+  const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId));
+  if (!session?.scenarioJson) return NextResponse.json({ error: 'session not found' }, { status: 404 });
+  const prevTurns = await db.select().from(turns).where(eq(turns.sessionId, sessionId)).orderBy(asc(turns.idx));
+  const messages: ChatMessage[] = [];
+  for (const t of prevTurns) {
+    if (t.userText) messages.push({ role: 'user', content: t.userText });
+    if (t.assistantText) messages.push({ role: 'assistant', content: t.assistantText });
+  }
+  return NextResponse.json({
+    sessionId,
+    scenario: JSON.parse(session.scenarioJson) as Scenario,
+    messages,
+    ended: session.endedAt !== null && session.endedAt !== undefined,
+  });
+}
+
 export async function POST(req: Request) {
   const body = (await req.json()) as
     | { action: 'scenario'; interest: string }
-    | { action: 'turn'; sessionId: string; text: string };
+    | { action: 'turn'; sessionId: string; text: string }
+    | { action: 'end'; sessionId: string };
   const learner = await ensureLearner();
   const db = getDb();
   const llm = getLlm();
@@ -42,6 +64,12 @@ export async function POST(req: Request) {
     vocabulary: vectorState.vocabulary.theta,
     grammar: vectorState.grammar.theta,
   };
+
+  // 结束会话：落库 endedAt（仪表盘「继续练习」据此隐藏已结束会话）
+  if (body.action === 'end') {
+    await db.update(sessions).set({ endedAt: new Date() }).where(eq(sessions.id, body.sessionId));
+    return NextResponse.json({ ok: true });
+  }
 
   if (body.action === 'scenario') {
     const gen = getGenerationParams('scenario');

@@ -32,6 +32,8 @@ export default function BasicPage() {
   const [dueGrammar, setDueGrammar] = useState<GrammarDrill[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [grammarFeedback, setGrammarFeedback] = useState<Record<string, { correct: boolean; answer: string }>>({});
+  const [busyVocab, setBusyVocab] = useState<Set<string>>(new Set());
+  const [busyGrammar, setBusyGrammar] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     const res = await fetch('/api/basic');
@@ -39,6 +41,8 @@ export default function BasicPage() {
     setDueVocab(data.dueVocab ?? []);
     setDueGrammar(data.dueGrammar ?? []);
     setGrammarFeedback({});
+    setBusyVocab(new Set());
+    setBusyGrammar(new Set());
     setLoaded(true);
   }, []);
 
@@ -47,22 +51,43 @@ export default function BasicPage() {
   }, [load]);
 
   async function reviewVocab(id: string, rating: number) {
-    await fetch('/api/basic', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'vocab', id, rating }),
-    });
-    setDueVocab((v) => v.filter((c) => c.id !== id));
+    // 防双击：请求期间禁用该卡评分按钮，请求结束后卡片才移除
+    if (busyVocab.has(id)) return;
+    setBusyVocab((s) => new Set(s).add(id));
+    try {
+      await fetch('/api/basic', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ kind: 'vocab', id, rating }),
+      });
+    } finally {
+      setDueVocab((v) => v.filter((c) => c.id !== id));
+      setBusyVocab((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    }
   }
 
   async function answerGrammar(drill: GrammarDrill, chosen: number) {
-    const res = await fetch('/api/basic', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'grammar', id: drill.id, nonce: drill.nonce, chosen }),
-    });
-    const data = await res.json();
-    setGrammarFeedback((f) => ({ ...f, [drill.id]: { correct: data.correct, answer: data.answer } }));
+    if (busyGrammar.has(drill.id) || grammarFeedback[drill.id]) return;
+    setBusyGrammar((s) => new Set(s).add(drill.id));
+    try {
+      const res = await fetch('/api/basic', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ kind: 'grammar', id: drill.id, nonce: drill.nonce, chosen }),
+      });
+      const data = await res.json();
+      setGrammarFeedback((f) => ({ ...f, [drill.id]: { correct: data.correct, answer: data.answer } }));
+    } finally {
+      setBusyGrammar((s) => {
+        const next = new Set(s);
+        next.delete(drill.id);
+        return next;
+      });
+    }
   }
 
   return (
@@ -88,7 +113,8 @@ export default function BasicPage() {
                 <button
                   key={r}
                   onClick={() => reviewVocab(card.id, r)}
-                  className={`rounded-lg border border-border bg-muted py-2 text-[13px] cursor-pointer ${RATING_COLOR[r]}`}
+                  disabled={busyVocab.has(card.id)}
+                  className={`rounded-lg border border-border bg-muted py-2 text-[13px] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${RATING_COLOR[r]}`}
                 >
                   {RATING_LABEL[r]}
                 </button>

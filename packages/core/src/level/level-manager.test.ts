@@ -4,11 +4,13 @@ import {
   applySignal,
   applySignals,
   bandOf,
+  bandProgress,
   newSkillState,
   newVectorState,
   displayBands,
+  CEFR_BANDS,
 } from './level-manager.ts';
-
+import { CEFR_BANDS } from './cefr.ts';
 test('带内漂移：θ 追随 EWMA，步长封顶 ±0.5', () => {
   let st = newSkillState(25);
   for (let i = 0; i < 10; i++) st = applySignal(st, 60);
@@ -83,4 +85,14 @@ test('五维状态与展示映射', () => {
 test('applySignals 连续应用', () => {
   const st = applySignals(newSkillState(20), [60, 60, 60, 60]);
   assert.ok(st.ewma > 40);
+});
+
+test('bandProgress 带内进度', () => {
+  // 各带下界进度为 0，上界趋近 1；顶带封顶 1
+  const bands = CEFR_BANDS.map((b) => b.min);
+  assert.ok(Math.abs(bandProgress(bands[0]!)) < 1e-9, 'band min = 0');
+  assert.ok(Math.abs(bandProgress(bands[1]!) - 0) < 1e-9, 'next band min resets progress');
+  assert.ok(bandProgress((bands[0]! + bands[1]!) / 2) > 0.49, 'mid band ~0.5');
+  assert.ok(bandProgress(99.9) > 0.99 && bandProgress(99.9) < 1, 'near top but not over');
+  assert.ok(bandProgress(100) >= 0 && bandProgress(100) <= 1);
 });

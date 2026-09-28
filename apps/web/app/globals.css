@@ -1,7 +1,12 @@
 @import 'tailwindcss';
 
-/* OpenLango 设计令牌：顶栏窄列 + 暗色（M5 移动端 web 沿用） */
-:root {
+/* OpenLango 设计令牌：四套「风格方案」整体切换（data-preset）。
+   每套自带明暗 + 主色 + 圆角 + 语义色，替代旧「外观模式 × 主题色」双维度机制。
+   变量名与 shadcn token 对齐，方便日后接 shadcn 组件库。 */
+
+/* ---------- A · 现状基线（zinc 深色 + emerald） ---------- */
+:root,
+html[data-preset='a'] {
   --background: #09090b;
   --foreground: #fafafa;
   --card: #111113;
@@ -12,25 +17,59 @@
   --primary-foreground: #052e21;
   --danger: #f87171;
   --warn: #fbbf24;
+  --preset-radius: 10px;
 }
 
-/* 外观模式（设置页：跟随系统/浅色/深色 → html[data-mode]） */
-html[data-mode='light'] {
-  --background: #ffffff;
-  --foreground: #09090b;
+/* ---------- B · Linear 风（近黑 + violet，细边框） ---------- */
+html[data-preset='b'] {
+  --background: #08090d;
+  --foreground: #e8e9ef;
+  --card: #101218;
+  --muted: #14161e;
+  --muted-foreground: #8b8fa3;
+  --border: #1f2330;
+  --primary: #7c6cf6;
+  --primary-foreground: #0d0c1d;
+  --danger: #f0708a;
+  --warn: #e8b45a;
+  --preset-radius: 12px;
+}
+
+/* ---------- C · 暖纸学习风（stone 浅色 + terracotta） ---------- */
+html[data-preset='c'] {
+  --background: #faf9f7;
+  --foreground: #292524;
   --card: #ffffff;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
+  --muted: #f0eeea;
+  --muted-foreground: #78716c;
+  --border: #e5e2dc;
+  --primary: #c2552c;
+  --primary-foreground: #fff7f2;
+  --danger: #dc2626;
+  --warn: #d97706;
+  --preset-radius: 14px;
 }
 
-/* 外观主题偏好（设置页色板 → html[data-theme]，全局生效） */
-html[data-theme='emerald'] { --primary: #10b981; --primary-foreground: #052e21; }
-html[data-theme='blue']    { --primary: #3b82f6; --primary-foreground: #eff6ff; }
-html[data-theme='violet']  { --primary: #8b5cf6; --primary-foreground: #f5f3ff; }
-html[data-theme='rose']    { --primary: #f43f5e; --primary-foreground: #fff1f2; }
-html[data-theme='amber']   { --primary: #f59e0b; --primary-foreground: #451a03; }
-html[data-theme='zinc']    { --primary: #e4e4e7; --primary-foreground: #18181b; }
+/* ---------- D · Clean Light（纯白 + indigo） ---------- */
+html[data-preset='d'] {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --primary: #4f46e5;
+  --primary-foreground: #eef2ff;
+  --danger: #dc2626;
+  --warn: #d97706;
+  --preset-radius: 16px;
+}
+
+/* C/D 浅色方案的卡片微阴影，增强层次（B 深色靠内描边） */
+html[data-preset='c'] .shadow-card,
+html[data-preset='d'] .shadow-card {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -43,13 +82,18 @@ html[data-theme='zinc']    { --primary: #e4e4e7; --primary-foreground: #18181b; 
   --color-primary-foreground: var(--primary-foreground);
   --color-danger: var(--danger);
   --color-warn: var(--warn);
-  --radius: 10px;
+  /* rounded-sm/md/lg/xl 跟随当前方案的圆角 */
+  --radius-sm: calc(var(--preset-radius) - 4px);
+  --radius-md: calc(var(--preset-radius) - 2px);
+  --radius-lg: var(--preset-radius);
+  --radius-xl: calc(var(--preset-radius) + 4px);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 @keyframes spin-slow {
@@ -61,3 +105,13 @@ body {
   50% { opacity: 0; }
 }
 .animate-caret { animation: blink 1s infinite; }
+
+/* dashboard 骨架屏 */
+@keyframes pulse-soft {
+  50% { opacity: 0.45; }
+}
+.skeleton {
+  background: var(--muted);
+  border-radius: var(--preset-radius);
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}

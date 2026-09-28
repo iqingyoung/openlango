@@ -108,7 +108,7 @@ export default function PlacementPage() {
           <div className="mb-3 font-semibold">定级完成（结果会随使用自动校准，无需焦虑）</div>
           <div className="flex flex-wrap gap-3">
             {Object.entries(finished).map(([skill, cefr]) => (
-              <div key={skill} className="flex-1 rounded-[10px] border border-border bg-muted p-3 text-center">
+              <div key={skill} className="flex-1 rounded-lg border border-border bg-muted p-3 text-center">
                 <div className="text-xs text-muted-foreground">{SKILL_ZH[skill]}</div>
                 <div className="text-[22px] font-bold text-primary">{cefr}</div>
               </div>

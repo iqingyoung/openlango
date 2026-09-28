@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -29,6 +29,15 @@ export default function ArticlePage() {
   const [stageInfo, setStageInfo] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  function cancel() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
+    setStage('idle');
+    setStageInfo(null);
+  }
 
   useEffect(() => {
     if (stage === 'idle') return;
@@ -44,40 +53,54 @@ export default function ArticlePage() {
     setArticle(null);
     setScore(null);
     setAnswers([]);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const signal = controller.signal;
 
     // 第一段：抓热点（秒级）
     setStage('search');
-    const r1 = await fetch('/api/article', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'search', topic, freshness }),
-    });
-    const d1 = await r1.json();
-    if (!r1.ok) {
+    try {
+      const r1 = await fetch('/api/article', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'search', topic, freshness }),
+        signal,
+      });
+      const d1 = await r1.json();
+      if (!r1.ok) {
+        setBusy(false);
+        setStage('idle');
+        setError(d1.error ?? '抓取热点失败');
+        return;
+      }
+      setStageInfo(`已抓取 ${d1.sources.length} 条热点信号（过滤 ${d1.flaggedSnippets.length} 条可疑内容）`);
+
+      // 第二段：LLM 生成（较慢）
+      setStage('compose');
+      const r2 = await fetch('/api/article', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'compose', topic, sources: d1.sources }),
+        signal,
+      });
+      const d2 = await r2.json();
       setBusy(false);
       setStage('idle');
-      setError(d1.error ?? '抓取热点失败');
-      return;
+      setStageInfo(null);
+      if (!r2.ok) {
+        setError(d2.error ?? '生成失败');
+        return;
+      }
+      setArticle(d2);
+      setAnswers(new Array(d2.quiz.length).fill(-1));
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return; // 用户取消，静默
+      setBusy(false);
+      setStage('idle');
+      setError((err as Error).message.slice(0, 120));
+    } finally {
+      abortRef.current = null;
     }
-    setStageInfo(`已抓取 ${d1.sources.length} 条热点信号（过滤 ${d1.flaggedSnippets.length} 条可疑内容）`);
-
-    // 第二段：LLM 生成（较慢）
-    setStage('compose');
-    const r2 = await fetch('/api/article', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'compose', topic, sources: d1.sources }),
-    });
-    const d2 = await r2.json();
-    setBusy(false);
-    setStage('idle');
-    setStageInfo(null);
-    if (!r2.ok) {
-      setError(d2.error ?? '生成失败');
-      return;
-    }
-    setArticle(d2);
-    setAnswers(new Array(d2.quiz.length).fill(-1));
   }
 
   async function submitQuiz() {
@@ -123,14 +146,15 @@ export default function ArticlePage() {
 
       {error && <div className="mt-3 text-sm text-danger">{error}</div>}
       {stage !== 'idle' && (
-        <Card className="mt-4 flex items-center gap-3">
+        <Card className="shadow-card mt-4 flex items-center gap-3">
           <span className="inline-block h-3.5 w-3.5 animate-slow-spin rounded-full border-2 border-primary border-t-transparent" />
-          <div className="text-sm">
+          <div className="flex-1 text-sm">
             {stage === 'search'
               ? '正在抓取热点信号…'
               : '正在按你的等级生成文章…（一般 30~120 秒，取决于模型速度）'}
             <span className="ml-2 text-muted-foreground">{elapsed}s</span>
           </div>
+          <Button variant="ghost" onClick={cancel} className="px-3 py-1.5 text-[13px]">取消</Button>
         </Card>
       )}
       {stageInfo && stage === 'idle' && !article && (
@@ -180,15 +204,18 @@ export default function ArticlePage() {
                   <div className="text-sm">{qi + 1}. {q.q}</div>
                   <div className="mt-2 grid gap-2">
                     {q.options.map((opt, oi) => (
-                      <label key={oi} className="flex cursor-pointer items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name={`q${qi}`}
-                          checked={answers[qi] === oi}
-                          onChange={() => setAnswers((a) => a.map((v, i) => (i === qi ? oi : v)))}
-                        />
-                        {opt}
-                      </label>
+                      <button
+                        key={oi}
+                        type="button"
+                        onClick={() => setAnswers((a) => a.map((v, i) => (i === qi ? oi : v)))}
+                        className={`cursor-pointer rounded-lg border px-3 py-2 text-left text-sm transition ${
+                          answers[qi] === oi
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border bg-muted hover:border-primary/60'
+                        }`}
+                      >
+                        {String.fromCharCode(65 + oi)}. {opt}
+                      </button>
                     ))}
                   </div>
                 </div>
