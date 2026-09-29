@@ -1,10 +1,12 @@
 /**
  * Guard 规则层（确定性代码，LLM 只是能力不是策略执行者）。
- * 分流原则（M0 规则版，后续可挂廉价分类器，接口不变）：
- *  - 系统身份劫持/指令覆盖/提示词探测/越狱 → block（coach）/ flag（article/basic，内容仍进 XML 隔离区）
- *  - 场景角色扮演请求（"请扮演面试官"/"我想练值机"）→ allow，属 Coach 核心功能，交给场景生成器
+ * 分层：词法模式 → classify() 只分类 → decideGuardAction() 只定策略（未来换分类器不碰策略）。
+ * 分流原则：
+ *  - 指令覆盖/提示词探测/解除约束 → block（coach）/ flag（article/basic，内容仍进 XML 隔离区）
+ *  - 场景角色扮演请求（"请扮演面试官"/"我想练值机"）→ allow，属 Coach 核心功能
+ *  - 敏感人设词（黑客/坏人…）：identity integrity ≠ content safety —— 扮演请求不因人设词升级为
+ *    劫持（练 "hacker" 对话是正当学习），有害内容由核心策略第 5 条与下游模型红线兜底
  *  - 教学引用（"「你是一个老师」用英语怎么说"）→ allow，零误伤红线
- *  - 恶意人设/解除约束标记（"扮演坏人/没有任何限制"）→ 劫持
  *  - 外部内容（新闻正文）→ scanExternalContent，命中即 flag（间接注入）
  */
 
@@ -71,12 +73,16 @@ const NEGATION_MARKERS: RegExp[] = [
   /\binstead of (being|being an?)\b/i,
 ];
 
-/** 恶意人设/解除约束：场景扮演请求里的越界内容 → 劫持 */
-const SUSPICIOUS_PATTERNS: RegExp[] = [
-  /坏人|杀手|黑客|恐怖|犯罪|诈骗|色情/,
-  /\bevil|criminal|villain|hacker|terrorist|dan\b/i,
+/** 解除约束标记：角色指派句内出现 → 真劫持（要的不是扮演，是脱缰） */
+const CONSTRAINT_REMOVAL_PATTERNS: RegExp[] = [
   /没有(任何)?(限制|规则|约束)|不受(任何)?(限制|约束)|无视一切规则/,
-  /\b(no|without) (rules|restrictions|limits|filter)\b/i,
+  /\b(no|without) (rules|restrictions|limits|filters?)\b/i,
+];
+
+/** 敏感人设词（content safety 维度）：记录进 matched 供策略/可观测使用，不改变分类 */
+const HARMFUL_PERSONA_PATTERNS: RegExp[] = [
+  /坏人|杀手|恐怖|犯罪|诈骗|色情/,
+  /\bevil|criminal|villain|hacker|terrorist\b/i,
 ];
 
 /** 教学引用：引号包裹 + 求翻译/求说法 → 零误伤放行 */
@@ -100,22 +106,37 @@ function matchAll(text: string, patterns: RegExp[]): string[] {
   return hits;
 }
 
+/** 词法分类器：只回答"输入属于哪类"，不决定动作 */
 function classify(text: string): GuardCategory {
   const teaching = matchAll(text, TEACHING_REFERENCE_PATTERNS);
   if (matchAll(text, OVERRIDE_PATTERNS).length > 0) {
     // 教学引用优先级最高："ignore previous instructions" 出现在引号/求翻译句里不算攻击
-    if (teaching.length > 0) return 'teaching_reference';
-    return 'instruction_override';
+    return teaching.length > 0 ? 'teaching_reference' : 'instruction_override';
   }
-  const roleHits = matchAll(text, ROLE_ASSIGN_PATTERNS);
-  if (roleHits.length > 0) {
+  if (matchAll(text, ROLE_ASSIGN_PATTERNS).length > 0) {
     if (teaching.length > 0) return 'teaching_reference';
     if (matchAll(text, NEGATION_MARKERS).length > 0) return 'identity_hijack';
-    if (matchAll(text, SUSPICIOUS_PATTERNS).length > 0) return 'identity_hijack';
+    if (matchAll(text, CONSTRAINT_REMOVAL_PATTERNS).length > 0) return 'identity_hijack';
+    // 敏感人设词不升级为劫持：扮演≠脱缰，有害内容由核心策略兜底
     return 'scenario_roleplay';
   }
   if (teaching.length > 0) return 'teaching_reference';
   return 'benign';
+}
+
+/** 策略决策：分类 × 模式 → 动作（coach 硬拦，article/basic 降级 flag 隔离） */
+export function decideGuardAction(category: GuardCategory, mode: GuardMode): GuardAction {
+  switch (category) {
+    case 'instruction_override':
+    case 'identity_hijack':
+      return mode === 'coach' ? 'block' : 'flag';
+    case 'scenario_roleplay':
+    case 'teaching_reference':
+    case 'benign':
+      return 'allow';
+    default:
+      return 'flag';
+  }
 }
 
 /**
@@ -124,21 +145,17 @@ function classify(text: string): GuardCategory {
  */
 export function classifyInput(text: string, mode: GuardMode): GuardVerdict {
   const category = classify(text);
+  const action = decideGuardAction(category, mode);
   const matched =
     category === 'benign'
       ? []
-      : matchAll(text, [...OVERRIDE_PATTERNS, ...ROLE_ASSIGN_PATTERNS, ...SUSPICIOUS_PATTERNS]);
-  switch (category) {
-    case 'instruction_override':
-    case 'identity_hijack':
-      return { action: mode === 'coach' ? 'block' : 'flag', category, matched };
-    case 'scenario_roleplay':
-    case 'teaching_reference':
-    case 'benign':
-      return { action: 'allow', category, matched };
-    default:
-      return { action: 'flag', category, matched };
-  }
+      : matchAll(text, [
+          ...OVERRIDE_PATTERNS,
+          ...ROLE_ASSIGN_PATTERNS,
+          ...CONSTRAINT_REMOVAL_PATTERNS,
+          ...HARMFUL_PERSONA_PATTERNS,
+        ]);
+  return { action, category, matched };
 }
 
 /** 外部内容（新闻正文等）间接注入扫描：命中即 flag，交由调用方决定呈现方式 */
