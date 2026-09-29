@@ -71,7 +71,10 @@ export function getProviders() {
 }
 
 export function getLlm(): LLMProvider | null {
-  return getProviders().llm ?? null;
+  const llm = getProviders().llm ?? null;
+  if (!llm) return null;
+  auditedLlm ??= wrapLlmWithAudit(llm);
+  return auditedLlm;
 }
 
 /** 独立评分通道：配置了 evaluator 能力位才有（judge 与对话 LLM 解耦） */
@@ -85,6 +88,86 @@ export function getAsr(): ASRProvider | null {
 
 export function getTts(): TTSProvider | null {
   return getProviders().tts ?? null;
+}
+
+// ---------- P3 审计咽喉点：所有 LLM 调用经统一代理，落 prompt 审计 + 用量台账 ----------
+
+import { createHash } from 'node:crypto';
+import { aiUsage, promptAudit, type ChatMessage, type ChatRequest, type ChatResponse } from '@openlango/core';
+
+let auditedLlm: LLMProvider | null = null;
+
+function hashPrompt(text: string): string {
+  return createHash('sha256').update(text).digest('hex').slice(0, 16);
+}
+
+function extractModule(messages: ChatMessage[]): { module: string; version: number } {
+  const system = messages.find((m) => m.role === 'system')?.content ?? '';
+  const module = system.match(/<module name="([a-z]+)"/)?.[1] ?? 'unknown';
+  const version = Number(system.match(/<openlango_core_policy version="(\d+)"/)?.[1] ?? 0);
+  return { module, version };
+}
+
+function auditPromptUsage(req: ChatRequest, driver: string): { module: string; t0: number } {
+  const { module, version } = extractModule(req.messages);
+  const system = req.messages.find((m) => m.role === 'system')?.content ?? '';
+  // fire-and-forget：审计失败绝不影响主流程
+  void getDb()
+    .insert(promptAudit)
+    .values({ id: crypto.randomUUID(), promptName: module, version, hash: hashPrompt(system) })
+    .catch(() => {});
+  return { module, t0: Date.now() };
+}
+
+function recordUsage(
+  module: string,
+  driver: string,
+  latencyMs: number,
+  success: boolean,
+  usage?: ChatResponse['usage'],
+): void {
+  void getDb()
+    .insert(aiUsage)
+    .values({
+      id: crypto.randomUUID(),
+      capability: 'llm',
+      driver,
+      model: getConfig().llm?.model ?? null,
+      module,
+      promptTokens: usage?.promptTokens ?? null,
+      completionTokens: usage?.completionTokens ?? null,
+      latencyMs,
+      success,
+    })
+    .catch(() => {});
+}
+
+/** LLM 审计代理：chat/chatStream 全覆盖（prompt 版本 hash + 模块 + 用量/延迟/成败） */
+function wrapLlmWithAudit(llm: LLMProvider): LLMProvider {
+  return {
+    driver: llm.driver,
+    async chat(req: ChatRequest): Promise<ChatResponse> {
+      const { module, t0 } = auditPromptUsage(req, llm.driver);
+      try {
+        const res = await llm.chat(req);
+        recordUsage(module, llm.driver, Date.now() - t0, true, res.usage);
+        return res;
+      } catch (err) {
+        recordUsage(module, llm.driver, Date.now() - t0, false);
+        throw err;
+      }
+    },
+    async *chatStream(req: ChatRequest) {
+      const { module, t0 } = auditPromptUsage(req, llm.driver);
+      try {
+        for await (const delta of llm.chatStream(req)) yield delta;
+        recordUsage(module, llm.driver, Date.now() - t0, true);
+      } catch (err) {
+        recordUsage(module, llm.driver, Date.now() - t0, false);
+        throw err;
+      }
+    },
+  };
 }
 
 // ---------- DB ----------

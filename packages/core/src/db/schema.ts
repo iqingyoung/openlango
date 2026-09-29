@@ -186,3 +186,18 @@ export const learningEvents = sqliteTable(
   },
   (t) => [index('learning_events_learner_time').on(t.learnerId, t.createdAt)],
 );
+
+/** AI 用量台账：每次 LLM 调用的成本/延迟/成败，验证"judge 最便宜、对话中档、文章高档"的成本分层 */
+export const aiUsage = sqliteTable('ai_usage', {
+  id: text('id').primaryKey(),
+  capability: text('capability').notNull().default('llm'),
+  driver: text('driver').notNull(),
+  model: text('model'),
+  /** 从 system prompt 提取的模块（coach/article/basic/placement/unknown） */
+  module: text('module').notNull().default('unknown'),
+  promptTokens: integer('prompt_tokens'),
+  completionTokens: integer('completion_tokens'),
+  latencyMs: integer('latency_ms'),
+  success: integer('success', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
