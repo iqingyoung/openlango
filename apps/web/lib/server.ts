@@ -126,13 +126,14 @@ function recordUsage(
   success: boolean,
   usage?: ChatResponse['usage'],
 ): void {
+  const model = getConfig().llm?.model;
   void getDb()
     .insert(aiUsage)
     .values({
       id: crypto.randomUUID(),
       capability: 'llm',
       driver,
-      model: getConfig().llm?.model ?? null,
+      model: typeof model === 'string' ? model : null,
       module,
       promptTokens: usage?.promptTokens ?? null,
       completionTokens: usage?.completionTokens ?? null,

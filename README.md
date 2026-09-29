@@ -73,7 +73,7 @@ docker compose up -d   # 端口 3000；data/config/.env 以卷挂载持久化
 | 全本地档    | FunASR/SenseVoice + Ollama(qwen3) + CosyVoice | 零 API 费 |
 | 高配档     | OpenAI Realtime STS                           | 按量      |
 
-judge/纠错用最便宜档，对话用中档，文章生成可高档——能力位分开路由。
+judge/纠错用最便宜档，对话用中档，文章生成可高档——能力位分开路由。配置 `evaluator` 能力位后 judge 走独立评分通道；`ai_usage` 台账让成本分层可被数据验证。
 
 ### ASR 单价参考（人民币/小时，2026-09 调研，以官方页为准）
 
@@ -103,6 +103,7 @@ TTS：Edge 免费音色（msedge 驱动，无需 key）；国内可换硅基流�
 - **M2 语音** ✅（cascade）：VoiceEvent 统一事件抽象 + cascade 编排（ASR→guard→流式 LLM→**分句流式 TTS**→judge/metrics）+ Coach 语音模式（客户端 VAD 自动断句、播放队列、**说话即打断 barge-in**、每步耗时展示）。ASR = OpenAI transcriptions 兼容（Groq 免费档 / 本地 whisper）；TTS = msedge 免费音色（无需 key）或 openai-speech 兼容端点。**需在 .env 填 `OPENLANGO_ASR_API_KEY`（console.groq.com 免费领取）后体验语音**
 - **M3 完善** ✅：输出层 **role-consistency judge**（漂移检测→下轮 system prompt 加固，异步审计不挡对话）+ **错误台账**（judge 纠错自动映射固定语法点→Basic 复习优先级提升、答对销账）+ 信号漂移触发**再校准标记**（dashboard 轻提示、placement 后清除，全程无评分打扰）
 - **M4 发布** ✅：Docker Compose（standalone）+ Anki apkg 导出 + 三套示例配置 + GitHub 撞名检查（openlango 可用，0 冲突）；S2S 经论证移出（可观测性/成本，国内候选 GLM-Realtime-Flash 0.18 元/分钟，留 M5 决策）
+- **v0.2.0 信任边界与学习质量加固** ✅：prompt 边界全转义（用户内容/LLM 场景字段不可闭合标签注入）；learner state 唯一写入入口 + learning_events 台账；LLM JSON 输出统一 schema 校验（quiz 越界拒绝）；judge 评分 evidence 化（accuracy/lexicalRange/目标词达成率加权）；evaluator 独立能力位接入（LLM ≠ Evaluator 落地）；Article 超纲硬门禁（分级阈值 + 重试 + 拒绝入库）；placement 五维诚实标注 measured/provisional；DB 唯一约束 + 外键级联；guard 分类/策略分离 + roleplay 误伤解耦；LLM 审计咽喉点（prompt hash + 用量遥测 ai_usage）
 
 License: [Apache-2.0](https://github.com/iqingyoung/openlango?tab=Apache-2.0-1-ov-file)
 
