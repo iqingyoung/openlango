@@ -36,9 +36,11 @@ asr:
   model: XingChenAGI/XingChenASR-V3.2   # 电信星辰 ASR（免费）；SenseVoiceSmall/Qwen3-ASR-1.7B 当前 transcriptions 端点 500
 
 # TTS：msedge = Edge 免费音色（无需 key，默认）；openai-speech = /audio/speech 兼容端点
+# fallbackDriver：主驱动失败自动回退（如 msedge 网络抖动切 openai-speech；备用需配置齐全）
 tts:
   driver: msedge
   voice: en-US-AriaNeural
+  # fallbackDriver: openai-speech
 
 # 能力位可分开路由，丰俭由人：
 # judge/纠错用最便宜档 → evaluator 独立能力位（LLM ≠ Evaluator）；对话用中档；文章生成可高档。

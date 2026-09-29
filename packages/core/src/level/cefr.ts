@@ -35,11 +35,21 @@ export function cefrToThetaMidpoint(cefr: CEFR): number {
   return (lower + upper) / 2;
 }
 
-/** 等级门控块：注入每次生成调用的 <learner_state>，词汇上限/语法白名单/句长语速 */
+// ---------- State 三视图：同一 learner state 的三种合法投影，禁止跨视图取值 ----------
+
+/** Prompt 视图：只暴露 CEFR 展示带（renderLevelBlock 的输出契约），永不含 θ */
+export type LearnerStatePrompt = Record<Skill, CEFR>;
+
+/** Public 视图：CEFR + 带内进度（UI 展示契约），永不含 θ */
+export interface LearnerStatePublic {
+  bands: Record<Skill, CEFR>;
+  progress: Record<Skill, number>;
+}
+
+/** 等级门控块（Prompt 视图投影）：只给 CEFR 展示带；
+ * θ 数值属 Internal 视图（DB/LevelManager），不进任何 prompt。 */
 export function renderLevelBlock(vector: SkillVector): string {
-  const parts = Object.entries(vector).map(
-    ([skill, theta]) => `${skill}: ${thetaToCefr(theta)} (theta ${theta.toFixed(1)})`,
-  );
+  const parts = Object.entries(vector).map(([skill, theta]) => `${skill}: ${thetaToCefr(theta)}`);
   return `Assessed CEFR profile: ${parts.join('; ')}. Content difficulty must match these levels — do not exceed them.`;
 }
 

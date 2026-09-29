@@ -14,7 +14,10 @@ import {
 export { Rating, State };
 export type SrsRating = 1 | 2 | 3 | 4; // Again/Hard/Good/Easy
 
-const scheduler = fsrs(generatorParameters({ enable_fuzz: false }));
+// fuzz：生产开启（避免大量卡片同日扎堆）；test 关闭保证断言可复现。
+// 测试可重复性与生产调度策略解绑，勿再绑死。
+const enableFuzz = process.env.NODE_ENV !== 'test';
+const scheduler = fsrs(generatorParameters({ enable_fuzz: enableFuzz }));
 
 export interface SrsFields {
   stability: number;

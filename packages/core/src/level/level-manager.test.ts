@@ -8,9 +8,9 @@ import {
   newSkillState,
   newVectorState,
   displayBands,
-  CEFR_BANDS,
 } from './level-manager.ts';
 import { CEFR_BANDS } from './cefr.ts';
+
 test('带内漂移：θ 追随 EWMA，步长封顶 ±0.5', () => {
   let st = newSkillState(25);
   for (let i = 0; i < 10; i++) st = applySignal(st, 60);

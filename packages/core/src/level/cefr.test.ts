@@ -24,7 +24,7 @@ test('θ 钳制', () => {
   assert.equal(clampTheta(42), 42);
 });
 
-test('levelBlock 渲染五维', () => {
+test('levelBlock 渲染五维（Prompt 视图：只有 CEFR，无 θ）', () => {
   const block = renderLevelBlock({
     reading: 55,
     listening: 40,
@@ -35,4 +35,5 @@ test('levelBlock 渲染五维', () => {
   assert.match(block, /reading: B2/);
   assert.match(block, /speaking: B1/);
   assert.match(block, /do not exceed/);
+  assert.doesNotMatch(block, /theta/); // Internal 视图数值不外泄
 });
