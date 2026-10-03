@@ -80,3 +80,21 @@ test('状态序列化往返', () => {
   restored.record(40, false);
   assert.notEqual(restored.theta, e.theta);
 });
+
+test('askedIds 去重：连续抽题不出同一语法点', () => {
+  const rng = mulberry32(7);
+  const engine = new PlacementEngine(7, 50);
+  const state = engine.serialize();
+  const seen = new Set<string>();
+  let guard = 0;
+  while (!engine.finished && guard++ < 20) {
+    const item = nextPlacementItem(engine, state, rng);
+    assert.ok(!seen.has(item.grammarId), `重复抽到 ${item.grammarId}`);
+    seen.add(item.grammarId);
+    const s = engine.serialize();
+    state.count = s.count;
+    state.askedIds = s.askedIds;
+    state.lastDelta = s.lastDelta;
+  }
+  assert.ok(seen.size >= 5, `抽题数不足: ${seen.size}`);
+});

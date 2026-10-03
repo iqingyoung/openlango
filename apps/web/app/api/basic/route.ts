@@ -75,22 +75,26 @@ export async function GET() {
     orderedIds.push(gid);
   }
 
-  const dueGrammar = orderedIds.slice(0, 5).map((gid) => {
-    const meta = GRAMMAR.find((g) => g.id === gid)!;
-    const row = dueGrammarRows.find((r) => r.grammarId === gid)!;
-    const nonce = Math.floor(Math.random() * 1e9);
-    const drill = makeDrill(gid, nonce);
-    return {
-      id: row.id,
-      grammarId: gid,
-      name: meta.name,
-      zh: meta.zh,
-      nonce,
-      prompt: drill.prompt,
-      options: drill.options,
-      kind: drill.kind,
-    };
-  });
+  const dueGrammar = orderedIds.slice(0, 5)
+    .map((gid) => {
+      const meta = GRAMMAR.find((g) => g.id === gid)!;
+      // 错误台账会把未到期/新建语法点排前，row 须在全量记录里找（只在到期集合找必 undefined 崩溃）
+      const row = dueGrammarRows.find((r) => r.grammarId === gid) ?? grammarRows.find((r) => r.grammarId === gid);
+      if (!row) return null;
+      const nonce = Math.floor(Math.random() * 1e9);
+      const drill = makeDrill(gid, nonce);
+      return {
+        id: row.id,
+        grammarId: gid,
+        name: meta.name,
+        zh: meta.zh,
+        nonce,
+        prompt: drill.prompt,
+        options: drill.options,
+        kind: drill.kind,
+      };
+    })
+    .filter((x) => x !== null);
 
   return NextResponse.json({ dueVocab, dueGrammar });
 }

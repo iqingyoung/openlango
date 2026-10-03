@@ -201,8 +201,11 @@ export function makeIdentifyItem(g: GrammarItem, rng: RNG, idx: number): Placeme
 
 export function nextPlacementItem(engine: PlacementEngine, state: PlacementState, rng: RNG): PlacementItem {
   const target = engine.nextDifficulty(rng);
-  const exclude = new Set(state.askedIds);
+  // exclude 双写：engine.askedIds（serialize 恢复）+ state.askedIds（route 持久化），缺一则排除池恒空
+  const exclude = new Set([...engine.askedIds, ...state.askedIds]);
   const g = pickGrammarNear(target, rng, exclude);
+  engine.askedIds.push(g.id);
+  if (!state.askedIds.includes(g.id)) state.askedIds.push(g.id);
   const item = rng() < 0.5
     ? makeClozeItem(g, rng, state.count)
     : makeIdentifyItem(g, rng, state.count);
