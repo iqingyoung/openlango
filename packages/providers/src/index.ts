@@ -10,6 +10,7 @@ import type {
   LLMProvider,
   ProviderKind,
   SearchProvider,
+  TTSOptions,
   TTSProvider,
 } from '@openlango/core';
 import { createOpenAICompat } from './llm-openai-compat.ts';
@@ -66,12 +67,12 @@ export function createProvider<K extends keyof ProviderForMap>(
 function chainTts(primary: TTSProvider, fallback: TTSProvider): TTSProvider {
   return {
     driver: `${primary.driver}->${fallback.driver}`,
-    async synthesize(opts) {
+    async synthesize(text: string, opts?: TTSOptions) {
       try {
-        return await primary.synthesize(opts);
+        return await primary.synthesize(text, opts);
       } catch (err) {
         console.warn(`[openlango] tts ${primary.driver} 失败，回退 ${fallback.driver}: ${(err as Error).message}`);
-        return fallback.synthesize(opts);
+        return fallback.synthesize(text, opts);
       }
     },
   };

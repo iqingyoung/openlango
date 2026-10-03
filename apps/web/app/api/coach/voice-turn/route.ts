@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     .orderBy(asc(turns.idx));
   const history: ChatMessage[] = [];
   for (const t of prevTurns.slice(-10)) {
-    if (t.userText) history.push({ role: 'user', content: t.userText });
+    if (t.userText) history.push({ role: 'user', content: wrapUserContent(t.userText) });
     if (t.assistantText) history.push({ role: 'assistant', content: t.assistantText });
   }
   const vectorState = await loadSkillStates(learner.id);

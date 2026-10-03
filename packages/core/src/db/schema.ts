@@ -54,7 +54,7 @@ export const sessions = sqliteTable('sessions', {
   scenarioJson: text('scenario_json'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   endedAt: integer('ended_at', { mode: 'timestamp' }),
-});
+}, (t) => [index('sessions_learner_created').on(t.learnerId, t.createdAt)]);
 
 export const turns = sqliteTable(
   'turns',
@@ -140,7 +140,7 @@ export const articles = sqliteTable('articles', {
   flaggedJson: text('flagged_json'), // 被间接注入过滤拦截的片段
   overbandRatio: real('overband_ratio'), // 输出侧等级硬锁校验结果
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
+}, (t) => [index('articles_learner_created').on(t.learnerId, t.createdAt)]);
 
 /** prompt 版本审计：模板每次渲染记录 hash，回归可追 */
 export const promptAudit = sqliteTable('prompt_audit', {

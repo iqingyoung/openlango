@@ -18,6 +18,7 @@ import {
   newVectorState,
   applySignal as applySignalCore,
   displayBands,
+  ensureSchema,
   type SkillVectorState,
 } from '@openlango/core';
 
@@ -80,6 +81,10 @@ export function getLlm(): LLMProvider | null {
 /** 独立评分通道：配置了 evaluator 能力位才有（judge 与对话 LLM 解耦） */
 export function getEvaluator(): EvaluatorProvider | null {
   return getProviders().evaluator ?? null;
+}
+
+export function getSearch(): SearchProvider | null {
+  return getProviders().search ?? null;
 }
 
 export function getAsr(): ASRProvider | null {
@@ -188,6 +193,7 @@ export function getDb(): DB {
   sqlite.pragma('busy_timeout = 5000'); // 并发写锁重试，避免 SQLITE_BUSY
   sqlite.pragma('synchronous = NORMAL'); // WAL 模式下的安全/吞吐平衡
   sqlite.pragma('foreign_keys = ON'); // 级联删除与引用完整性
+  ensureSchema(sqlite); // 幂等建表：Docker/全新环境无 drizzle-kit 也能开箱即用
   globalStore.__openlangoDb = drizzle(sqlite);
   return globalStore.__openlangoDb;
 }

@@ -7,6 +7,7 @@
  */
 import type { ASRProvider, ChatMessage, EvaluatorProvider, LLMProvider, TTSProvider } from '../types.ts';
 import { classifyInput } from '../guard/index.ts';
+import { wrapUserContent } from '../prompt/index.ts';
 import { splitSentences } from './types.ts';
 import type { VoiceEvent, VoiceTurnMetrics } from './types.ts';
 import { judgeTurn, NUDGE_EN, type Scenario, type TurnJudge } from '../coach/index.ts';
@@ -99,7 +100,7 @@ export async function* cascadeVoiceTurn(opts: CascadeTurnOptions): AsyncGenerato
 
     // 3) 流式 LLM + 分句流式 TTS
     throwIfAborted();
-    const messages: ChatMessage[] = [...opts.messages, { role: 'user', content: transcript.text }];
+    const messages: ChatMessage[] = [...opts.messages, { role: 'user', content: wrapUserContent(transcript.text) }];
     let reply = '';
     let pendingText = '';
 

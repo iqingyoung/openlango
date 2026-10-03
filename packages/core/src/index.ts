@@ -13,5 +13,6 @@ export * from './coach/index.ts';
 export * from './voice/types.ts';
 export * from './voice/cascade.ts';
 
+export { ensureSchema, SCHEMA_DDL } from './db/init.ts';
 export { parseJsonLoose } from './util/json.ts';
 export { parseLLMOutput } from './util/llm-schema.ts';

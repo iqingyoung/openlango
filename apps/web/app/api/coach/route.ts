@@ -38,7 +38,7 @@ export async function GET(req: Request) {
   const prevTurns = await db.select().from(turns).where(eq(turns.sessionId, sessionId)).orderBy(asc(turns.idx));
   const messages: ChatMessage[] = [];
   for (const t of prevTurns) {
-    if (t.userText) messages.push({ role: 'user', content: t.userText });
+    if (t.userText) messages.push({ role: 'user', content: wrapUserContent(t.userText) });
     if (t.assistantText) messages.push({ role: 'assistant', content: t.assistantText });
   }
   return NextResponse.json({
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     .orderBy(asc(turns.idx));
   const history: ChatMessage[] = [];
   for (const t of prevTurns.slice(-10)) {
-    if (t.userText) history.push({ role: 'user', content: t.userText });
+    if (t.userText) history.push({ role: 'user', content: wrapUserContent(t.userText) });
     if (t.assistantText) history.push({ role: 'assistant', content: t.assistantText });
   }
   const cefr = bandOf(vector.speaking);
