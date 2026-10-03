@@ -85,17 +85,32 @@ const HARMFUL_PERSONA_PATTERNS: RegExp[] = [
   /\bevil|criminal|villain|hacker|terrorist\b/i,
 ];
 
-/** 教学引用：引号包裹 + 求翻译/求说法 → 零误伤放行 */
-const TEACHING_REFERENCE_PATTERNS: RegExp[] = [
+/** 引用语法：仅证明"有引用"，单独出现不构成教学豁免（防引号包越狱指令绕过） */
+const QUOTE_PATTERNS: RegExp[] = [
   /「[^」]{1,60}」|『[^』]{1,60}』|“[^”]{1,60}”/,
   /"([^"\\]{1,80})"/,
   /(')([^'\\]{1,80})\1/,
+];
+
+/** 教学意图：求翻译/求说法/求释义（中英文） */
+const QUERY_INTENT_PATTERNS: RegExp[] = [
   /(怎么|如何)(说|讲|拼|读|翻译|表达)|翻译成英语|英语(怎么|如何)说|用英语(怎么|如何)/,
+  /是什么意思|什么意思|什么含义|怎么用|举个例子/,
   /\bhow (do|would|can) (you|I|we|one) say\b/i,
   /\bhow (do|to|would) (you )?(say|spell|pronounce|write)\b/i,
   /\bwhat does ["'「“]?[^"'」”]{1,60}["'」”]? ?mean\b/i,
+  /\bwhat'?s (the )?(meaning of|english for)\b/i,
   /\btranslate (this |it |that )?(to|into) english\b/i,
 ];
+
+/** 教学引用判定（零误伤红线）：必须有教学意图；意图+引用/短句才算。
+ * 纯引号包住的越狱指令（无意图）不再被豁免 —— 修复引号无条件绕过漏洞。 */
+function isTeachingReference(text: string): boolean {
+  const hasIntent = matchAll(text, QUERY_INTENT_PATTERNS).length > 0;
+  if (!hasIntent) return false;
+  const hasQuote = matchAll(text, QUOTE_PATTERNS).length > 0;
+  return hasQuote || text.length < 80;
+}
 
 function matchAll(text: string, patterns: RegExp[]): string[] {
   const hits: string[] = [];
@@ -108,19 +123,18 @@ function matchAll(text: string, patterns: RegExp[]): string[] {
 
 /** 词法分类器：只回答"输入属于哪类"，不决定动作 */
 function classify(text: string): GuardCategory {
-  const teaching = matchAll(text, TEACHING_REFERENCE_PATTERNS);
   if (matchAll(text, OVERRIDE_PATTERNS).length > 0) {
-    // 教学引用优先级最高："ignore previous instructions" 出现在引号/求翻译句里不算攻击
-    return teaching.length > 0 ? 'teaching_reference' : 'instruction_override';
+    // 教学引用优先级最高：求翻译/求释义句里的攻击指令不算攻击；纯引号包裹不算豁免
+    return isTeachingReference(text) ? 'teaching_reference' : 'instruction_override';
   }
   if (matchAll(text, ROLE_ASSIGN_PATTERNS).length > 0) {
-    if (teaching.length > 0) return 'teaching_reference';
+    if (isTeachingReference(text)) return 'teaching_reference';
     if (matchAll(text, NEGATION_MARKERS).length > 0) return 'identity_hijack';
     if (matchAll(text, CONSTRAINT_REMOVAL_PATTERNS).length > 0) return 'identity_hijack';
     // 敏感人设词不升级为劫持：扮演≠脱缰，有害内容由核心策略兜底
     return 'scenario_roleplay';
   }
-  if (teaching.length > 0) return 'teaching_reference';
+  if (isTeachingReference(text)) return 'teaching_reference';
   return 'benign';
 }
 
@@ -153,6 +167,8 @@ export function classifyInput(text: string, mode: GuardMode): GuardVerdict {
           ...OVERRIDE_PATTERNS,
           ...ROLE_ASSIGN_PATTERNS,
           ...CONSTRAINT_REMOVAL_PATTERNS,
+          ...QUERY_INTENT_PATTERNS,
+          ...QUOTE_PATTERNS,
           ...HARMFUL_PERSONA_PATTERNS,
         ]);
   return { action, category, matched };
