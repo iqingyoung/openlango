@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { ensureLearner, getLlm, getDb, loadSkillStates, recordLearningEvidence, getGenerationParams } from '@/lib/server';
-import { createProviders } from '@openlango/providers';
+import {
+  ensureLearner,
+  getLlm,
+  getDb,
+  loadSkillStates,
+  recordLearningEvidence,
+  getGenerationParams,
+  getSearch,
+} from '@/lib/server';
 import {
   articles,
   vocabStates,
@@ -16,10 +23,6 @@ import {
   type SearchItem,
   type TopicSearchResult,
 } from '@openlango/core';
-
-function getSearch() {
-  return createProviders({ search: { driver: 'rss' } }).search ?? null;
-}
 
 export async function POST(req: Request) {
   const body = (await req.json()) as

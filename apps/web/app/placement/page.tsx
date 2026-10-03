@@ -55,15 +55,21 @@ export default function PlacementPage() {
       body: JSON.stringify({ action: 'answer', runId, chosen }),
     });
     const data = await res.json();
-    setBusy(false);
-    setFeedback(data.finished ? null : data.correct);
     if (data.finished) {
+      setBusy(false);
+      setFeedback(null);
       setFinished(data.bands);
       setBasis(data.basis ?? null);
       setItem(null);
     } else {
-      setItem(data.item);
-      setProgress(data.progress);
+      // 本题先保留 800ms 展示正误反馈，再切下一题（反馈不串题）
+      setFeedback(data.correct);
+      setTimeout(() => {
+        setItem(data.item);
+        setProgress(data.progress);
+        setFeedback(null);
+        setBusy(false);
+      }, 800);
     }
   }
 

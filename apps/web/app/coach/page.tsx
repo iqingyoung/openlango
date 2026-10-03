@@ -146,11 +146,12 @@ export default function CoachPage() {
       return;
     }
 
-    // SSE 流式增量渲染
+    // SSE 流式增量渲染（finally 兜底：网络闪断/解码异常也不永久 loading）
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
     let buf = '';
     let reply = '';
+    try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -175,7 +176,9 @@ export default function CoachPage() {
         }
       }
     }
-    setBusy(false);
+    } finally {
+      setBusy(false);
+    }
   }
 
   // 语音面板回调：与文本消息共用同一套 state

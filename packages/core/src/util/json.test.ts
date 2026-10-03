@@ -29,3 +29,9 @@ test('截断修复：嵌套对象截断', () => {
 test('完全无 JSON 报错', () => {
   assert.throws(() => parseJsonLoose('no json here at all'), /no json/);
 });
+
+test('顶层数组：完整与截断都可提取', () => {
+  assert.deepEqual(parseJsonLoose('说明 ["apple","banana"] 尾部'), ['apple', 'banana']);
+  // 截断修复语义与对象路径一致：优先补全未闭合字符串，而非回退丢弃
+  assert.deepEqual(parseJsonLoose('["apple","ban'), ['apple', 'ban']);
+});

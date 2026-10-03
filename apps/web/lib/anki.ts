@@ -130,6 +130,8 @@ export async function buildApkg(vocab: VocabRow[], grammar: GrammarRow[]): Promi
   const tmp = await mkdtemp(join(tmpdir(), 'anki-'));
   const dbPath = join(tmp, 'collection.anki2');
   const db = new Sqlite(dbPath); // better-sqlite3 无内存序列化 API，落临时文件再读字节
+  let anki2: Uint8Array;
+  try {
   db.exec(SCHEMA);
   const nowSec = Math.floor(Date.now() / 1000);
   db.prepare(
@@ -163,8 +165,10 @@ export async function buildApkg(vocab: VocabRow[], grammar: GrammarRow[]): Promi
   }
 
   db.close();
-  const anki2 = await readFile(dbPath);
-  void rm(tmp, { recursive: true, force: true }).catch(() => {});
+  anki2 = new Uint8Array(await readFile(dbPath));
+  } finally {
+    void rm(tmp, { recursive: true, force: true }).catch(() => {});
+  }
 
   const zip = new JSZip();
   zip.file('media', '{}');

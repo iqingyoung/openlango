@@ -143,10 +143,13 @@ export function createRssSearch(raw: DriverConfig): SearchProvider {
           if (items.length > 0) return items.slice(0, opts?.limit ?? items.length);
           errors.push(`${e.name}: empty`);
         } catch (err) {
+          // 国内无代理环境 google/bing 常超时：engine 可在 config 固定为 hn/npr 等可直连源
           errors.push(`${e.name}: ${(err as Error).message.slice(0, 80)}`);
         }
       }
-      throw new Error(`all engines failed [${errors.join('; ')}]`);
+      throw new Error(
+        `all engines failed [${errors.join('; ')}] — 国内网络建议 config 里 engine 固定为 'hn' 或 'npr'`,
+      );
     },
   };
 }

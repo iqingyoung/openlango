@@ -150,6 +150,7 @@ export function createOpenAICompat(raw: DriverConfig): LLMProvider {
       const think = new ThinkFilter(cfg.stripThink === true);
       let buf = '';
       let doneFlag = false;
+      try {
       while (!doneFlag) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -181,6 +182,10 @@ export function createOpenAICompat(raw: DriverConfig): LLMProvider {
       }
       const tail = think.end();
       if (tail) yield tail;
+      } finally {
+        // 消费方提前 break（语音打断/限长）也要释放底层连接
+        await reader.cancel().catch(() => {});
+      }
     },
   };
 }

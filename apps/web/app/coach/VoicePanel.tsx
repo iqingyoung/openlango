@@ -80,6 +80,7 @@ export default function VoicePanel({ sessionId, slim, onUserText, onAssistantDel
       return;
     }
     setSt('speaking');
+    speakingSinceRef.current = Date.now(); // 起音抑制窗起点，防扬声器回声自打断
     // base64 → Blob → objectURL：data:audio/mp3 在部分 Edge 版本报"不支持源"，
     // 标准 audio/mpeg + objectURL 兼容性最好
     const bin = atob(next);
@@ -121,6 +122,8 @@ export default function VoicePanel({ sessionId, slim, onUserText, onAssistantDel
       queueRef.current = [];
       if (audioRef.current) {
         audioRef.current.pause();
+        // 打断的音频不会走 onended/onerror，objectURL 须显式释放（防长会话内存泄漏）
+        if (audioRef.current.src.startsWith('blob:')) URL.revokeObjectURL(audioRef.current.src);
         audioRef.current = null;
       }
       if (capture) {

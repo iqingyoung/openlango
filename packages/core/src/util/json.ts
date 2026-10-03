@@ -55,8 +55,15 @@ export function parseJsonLoose(text: string): unknown {
   let t = text.trim();
   const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fence) t = fence[1]!.trim();
-  const start = t.indexOf('{');
-  const end = t.lastIndexOf('}');
+  // 优先对象 {}；无 { 时兼容顶层数组 []（截断修复两种括号都支持）
+  let start = t.indexOf('{');
+  let end = -1;
+  if (start === -1) {
+    start = t.indexOf('[');
+    end = t.lastIndexOf(']');
+  } else {
+    end = t.lastIndexOf('}');
+  }
   if (start === -1) throw new Error('no json object found');
   if (end > start) {
     try {

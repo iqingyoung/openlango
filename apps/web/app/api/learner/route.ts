@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { ensureLearner, getBands, getLlm, getDb, SETTINGS_PATHS } from '@/lib/server';
 import { vocabStates, grammarStates, skillLevels, sessions, isDue, bandProgress, type Skill } from '@openlango/core';
 
@@ -21,7 +21,7 @@ export async function GET() {
   const [last] = await db
     .select()
     .from(sessions)
-    .where(eq(sessions.learnerId, learner.id))
+    .where(and(eq(sessions.learnerId, learner.id), isNull(sessions.endedAt)))
     .orderBy(desc(sessions.createdAt))
     .limit(1);
   let lastSession: { id: string; module: string; title: string } | null = null;
